@@ -1,0 +1,67 @@
+<?php
+if (!defined('BMIS_ROLE_REQUIRED')) { define('BMIS_ROLE_REQUIRED', 'admin_dashboard'); }
+require_once ROOT_PATH . '/secure_header.php';
+
+require ROOT_PATH . '/classes/conn.php';
+require_once ROOT_PATH . '/pagination_helper.php';
+
+if (isset($_POST['search_voters'])) {
+    $keyword = $_POST['keyword'];
+    $kw      = "%$keyword%";
+    $page    = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = 10;
+
+    $countStmt = $conn->prepare("SELECT COUNT(*) FROM `tbl_resident` WHERE (voter = 'Yes' AND (is_archived = 0 OR is_archived IS NULL)) AND (`lname` LIKE :kw OR `mi` LIKE :kw OR `fname` LIKE :kw OR `age` LIKE :kw OR `sex` LIKE :kw OR `status` LIKE :kw OR `houseno` LIKE :kw OR `street` LIKE :kw OR `brgy` LIKE :kw OR `municipal` LIKE :kw OR `contact` LIKE :kw OR `bdate` LIKE :kw)");
+    $countStmt->execute([':kw' => $kw]);
+    $total = (int)$countStmt->fetchColumn();
+
+    $offset = ($page - 1) * $perPage;
+    $stmnt = $conn->prepare("SELECT * FROM `tbl_resident` WHERE (voter = 'Yes' AND (is_archived = 0 OR is_archived IS NULL)) AND (`lname` LIKE :kw OR `mi` LIKE :kw OR `fname` LIKE :kw OR `age` LIKE :kw OR `sex` LIKE :kw OR `status` LIKE :kw OR `houseno` LIKE :kw OR `street` LIKE :kw OR `brgy` LIKE :kw OR `municipal` LIKE :kw OR `contact` LIKE :kw OR `bdate` LIKE :kw) LIMIT $perPage OFFSET $offset");
+    $stmnt->execute([':kw' => $kw]);
+    $rows = $stmnt->fetchAll();
+
+    $paged = ['rows' => $rows, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'last_page' => (int)ceil($total / $perPage)];
+?>
+<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
+    <thead class="alert-info"><tr><th>#</th><<th>Fullname</th><th>Sex</th><th>Status</th><th>Address</th><th>Birth date</th></tr></thead>
+    <tbody>
+        <?php foreach ($rows as $row): ?>
+        <tr>
+            <td><?= $i++ ?></td>
+            <td><?= htmlspecialchars($row['lname']) ?>, <?= htmlspecialchars($row['fname']) ?> <?= htmlspecialchars($row['mi']) ?></td>
+          
+            <td><?= htmlspecialchars($row['sex']) ?></td>
+            <td><?= htmlspecialchars($row['status']) ?></td>
+            <td><?= htmlspecialchars($row['houseno']) ?>, <?= htmlspecialchars($row['street']) ?> <?= htmlspecialchars($row['brgy']) ?> <?= htmlspecialchars($row['municipal']) ?></td>
+            <td><?= htmlspecialchars($row['bdate']) ?></td>
+        </tr>
+        <?php endforeach; ?>
+        <?php if (empty($rows)): ?><tr><td colspan="12" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
+    </tbody>
+</table>
+<?php render_pagination($paged); ?>
+
+<?php } else {
+    $rows  = $view['rows']  ?? [];
+    $paged = $view;
+?>
+<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
+     <thead class="alert-info"><tr><th>#</th><th>Fullname</th><th>Sex</th><th>Status</th><th>Address</th><th>Birth date</th></tr></thead>
+    <tbody>
+        <?php foreach ($rows as $row): ?>
+        <tr>
+             <td><?= $i++ ?></td>
+<td><?= htmlspecialchars($row['lname']) ?>, <?= htmlspecialchars($row['fname']) ?> <?= htmlspecialchars($row['mi']) ?></td>
+          
+            <td><?= htmlspecialchars($row['sex']) ?></td>
+            <td><?= htmlspecialchars($row['status']) ?></td>
+            <td><?= htmlspecialchars($row['houseno']) ?>, <?= htmlspecialchars($row['street']) ?> <?= htmlspecialchars($row['brgy']) ?> <?= htmlspecialchars($row['municipal']) ?></td>
+            <td><?= htmlspecialchars($row['bdate']) ?></td>
+        </tr>
+        <?php endforeach; ?>
+        <?php if (empty($rows)): ?><tr><td colspan="12" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
+    </tbody>
+</table>
+<?php render_pagination($paged); ?>
+
+<?php } $conn = null; ?>

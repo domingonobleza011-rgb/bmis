@@ -1,0 +1,762 @@
+include('dashboard_sidebar_start.php'); ?>
+<!DOCTYPE html> 
+<html>
+<head> 
+    <title>Messages - Barangay Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://kit.fontawesome.com/67a9b7069e.js" crossorigin="anonymous"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        .status-pending  { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-approved { background: #d1e7dd; color: #0f5132; border: 1px solid #198754; }
+        .status-rejected { background: #f8d7da; color: #842029; border: 1px solid #dc3545; }
+        .nav-tabs .nav-link { font-weight: 600; }
+        .id-preview img { max-width: 100%; max-height: 350px; border-radius: 10px; border: 1px solid #dee2e6; }
+
+        /* ── Confirmation modals ── */
+        .bmis-modal-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+        }
+        .bmis-modal-backdrop.open { display: flex; }
+        .bmis-modal-card {
+            background: #fff; border-radius: 14px; padding: 28px 32px;
+            width: 100%; max-width: 430px; margin: 0 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        }
+        .bmis-modal-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .bmis-modal-title  { font-size: 15px; font-weight: 600; margin: 0; color: #0f2d5a; }
+        .bmis-modal-sub    { font-size: 13px; color: #6b7280; margin: 0; }
+        .bmis-modal-info   { border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+        .bmis-modal-info p { margin: 0; }
+        .bmis-btn-cancel {
+            padding: 8px 18px; font-size: 13px; border-radius: 8px; cursor: pointer;
+            border: 1px solid #d1d5db; background: #fff; color: #6b7280;
+        }
+        .bmis-btn-confirm {
+            padding: 8px 20px; font-size: 13px; font-weight: 600; border-radius: 8px;
+            cursor: pointer; border: none; color: #fff;
+        }
+
+        /* ── Bulk toolbar ── */
+        #bulkToolbar {
+            background: #eff6ff;
+            border-bottom: 1px solid #bfdbfe;
+            border-radius: 12px 12px 0 0;
+            transition: all 0.2s ease;
+        }
+
+        /* ── Row selected highlight ── */
+        tr.row-selected {
+            background-color: #eff6ff !important;
+        }
+
+        /* ── Custom checkboxes ── */
+        .msg-checkbox,
+        #selectAllMsgs {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #6c757d;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+
+        /* Header checkbox sits inside dark thead — give it a lighter border */
+        thead .msg-checkbox,
+        thead #selectAllMsgs {
+            border-color: #adb5bd;
+            background-color: transparent;
+        }
+
+        /* Hover state */
+        .msg-checkbox:hover,
+        #selectAllMsgs:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+        }
+
+        /* Checked state */
+        .msg-checkbox:checked,
+        #selectAllMsgs:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        /* Checkmark via SVG background */
+        .msg-checkbox:checked::after,
+        #selectAllMsgs:checked::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3 8l3.5 3.5L13 4.5'/%3E%3C/svg%3E") center / 12px no-repeat;
+        }
+
+        /* Indeterminate (dash) state for select-all */
+        #selectAllMsgs:indeterminate {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        #selectAllMsgs:indeterminate::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' d='M3.5 8h9'/%3E%3C/svg%3E") center / 12px no-repeat;
+        }
+
+        /* Focus ring */
+        .msg-checkbox:focus-visible,
+        #selectAllMsgs:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.35);
+        }
+
+        /* Checked row — checkbox accent stays blue */
+        tr.row-selected .msg-checkbox {
+            border-color: #0d6efd;
+        }
+
+        /* ── Success toast ── */
+        #bmisToast {
+            display: none; position: fixed; bottom: 28px; right: 28px;
+            z-index: 10000; min-width: 300px; max-width: 400px;
+        }
+        #bmisToastInner {
+            border-radius: 14px; padding: 16px 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            display: flex; align-items: flex-start; gap: 14px;
+            animation: toastIn 0.3s ease;
+        }
+        #bmisToastIcon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── View Message modal: chat/conversation style ── */
+        .chat-thread-header {
+            background: linear-gradient(135deg, #0f2d5a, #1a4480);
+            padding: 16px 20px;
+        }
+        .chat-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,0.18);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px; color: #fff; flex-shrink: 0;
+        }
+        .chat-avatar-sm {
+            width: 32px; height: 32px; font-size: 13px;
+            background: #0d6efd; color: #fff;
+        }
+        .chat-thread-bg {
+            background: #eef2f7;
+            height: 460px;
+            max-height: 65vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .chat-thread-bg::-webkit-scrollbar { width: 6px; }
+        .chat-thread-bg::-webkit-scrollbar-track { background: transparent; }
+        .chat-thread-bg::-webkit-scrollbar-thumb { background: rgba(15,45,90,0.18); border-radius: 3px; }
+        .chat-thread-bg::-webkit-scrollbar-thumb:hover { background: rgba(15,45,90,0.3); }
+        .chat-row {
+            display: flex; align-items: flex-end; gap: 10px;
+        }
+        .chat-bubble {
+            max-width: 78%;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .chat-bubble-incoming {
+            background: #fff;
+            color: #212529;
+            border-radius: 4px 16px 16px 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+        .chat-row-outgoing {
+            justify-content: flex-end;
+        }
+        .chat-bubble-outgoing {
+            background: #0d6efd;
+            color: #fff;
+            border-radius: 16px 4px 16px 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+        }
+        .chat-timestamp-outgoing {
+            margin: 6px 0 0;
+            text-align: right;
+        }
+        .chat-timestamp {
+            margin: 10px 0 0 42px;
+            font-size: 11px;
+            color: #8a94a6;
+        }
+        .reply-box {
+            margin-left: 42px;
+        }
+        .reply-textarea {
+            resize: none;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .reply-textarea:focus {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+            border-color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container my-4">
+    <h2 class="fw-bold mb-4 text-center">Resident Messages<span class="badge bg-primary ms-1" id="badge-msg-count"><?= count($conversations) > 0 ? count($conversations) : '' ?></span></h2>
+
+
+
+    <div class="tab-content">
+
+        
+
+        <!-- TAB 2: RESIDENT MESSAGES -->
+        <div class="tab-pane fade show active" id="messages-panel">
+            <div class="card shadow-sm border-0 rounded-4">
+
+                <!-- Bulk action toolbar (hidden until at least 1 checkbox is checked) -->
+                <div id="bulkToolbar" class="d-none px-4 py-3 d-flex align-items-center gap-3 rounded-top-4">
+                    <i class="bi bi-check2-square text-primary fs-5"></i>
+                    <span id="selectedCount" class="fw-bold text-primary small"></span>
+                    <button type="button" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold"
+                            onclick="openBulkDeleteModal()">
+                        <i class="bi bi-trash-fill me-1"></i> Delete Selected
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                            onclick="clearSelection()">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </button>
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table table-hover text-center mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="py-3" style="width: 48px;">
+                                    <input type="checkbox" id="selectAllMsgs" class="form-check-input"
+                                           onchange="toggleSelectAll(this)" title="Select all messages">
+                                </th>
+                                <th class="py-3">Resident Name</th>
+                                <th class="py-3">Date Sent</th>
+                                <th class="py-3">View</th>
+                                <th class="py-3">Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messages-tbody">
+                            <?php if (!empty($conversations)): ?>
+                                <?php foreach ($conversations as $conv):
+                                    $rid      = $conv['id_resident'];
+                                    $mfname   = htmlspecialchars($conv['fname']);
+                                    $mfull    = htmlspecialchars($conv['fname'] . ' ' . $conv['lname']);
+                                    $thread   = $systemObject->getConversationThread($rid);
+                                    $lastMsg  = end($thread); // most recent bubble, used to decide "Reply" vs "Reply Again"
+                                ?>
+                                    <tr id="msgRow<?= $rid ?>">
+                                        <td class="align-middle">
+                                            <input type="checkbox" class="form-check-input msg-checkbox"
+                                                   value="<?= $rid ?>" onchange="updateBulkToolbar()">
+                                        </td>
+                                        <td class="align-middle fw-bold">
+                                            <?= $mfull ?>
+                                            <?php if ($conv['unread_count'] > 0): ?>
+                                                <span class="badge bg-danger rounded-pill ms-1"><?= (int)$conv['unread_count'] ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="align-middle">
+                                            <?= date('M d, Y | h:i A', strtotime($conv['last_date'])) ?>
+                                        </td>
+                                        <td class="align-middle">
+                                            <button class="btn btn-info btn-sm rounded-pill px-3 fw-bold"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#viewMsg<?= $rid ?>">
+                                                <i class="bi bi-eye-fill me-1"></i> View
+                                            </button>
+                                        </td>
+                                        <td class="align-middle">
+                                            <button type="button" class="btn btn-danger btn-sm rounded-pill px-3"
+                                                onclick="openDeleteMsgModal(<?= $rid ?>, '<?= $mfname ?>')">
+                                                <i class="bi bi-trash-fill me-1"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <!-- View Conversation Modal (Bootstrap) - full chat thread for this resident -->
+                                    <div class="modal fade" id="viewMsg<?= $rid ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                                                <div class="modal-header chat-thread-header text-white">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="chat-avatar"><?= strtoupper(substr($mfname, 0, 1)) ?></div>
+                                                        <div>
+                                                            <h6 class="modal-title fw-bold mb-0"><?= $mfull ?></h6>
+                                                            <small class="opacity-75">Resident</small>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body p-4 chat-thread-bg">
+                                                    <?php foreach ($thread as $bubble): ?>
+                                                        <?php if ($bubble['side'] === 'resident'): ?>
+                                                            <div class="chat-row mt-3">
+                                                                <div class="chat-avatar chat-avatar-sm"><?= strtoupper(substr($mfname, 0, 1)) ?></div>
+                                                                <div class="chat-bubble chat-bubble-incoming">
+                                                                    <?= nl2br(htmlspecialchars($bubble['message_text'])) ?>
+                                                                </div>
+                                                            </div>
+                                                            <div class="chat-timestamp">
+                                                                <?= date('F j, Y, g:i a', strtotime($bubble['date_sent'])) ?>
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div class="chat-row chat-row-outgoing mt-3">
+                                                                <div class="chat-bubble chat-bubble-outgoing">
+                                                                    <?= nl2br(htmlspecialchars($bubble['message_text'])) ?>
+                                                                </div>
+                                                            </div>
+                                                            <div class="chat-timestamp chat-timestamp-outgoing">
+                                                                <?= date('F j, Y, g:i a', strtotime($bubble['date_sent'])) ?>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+
+                                                    <!-- Reply composer: hidden until "Reply" is clicked -->
+                                                    <div class="reply-box d-none mt-3" id="replyBox<?= $rid ?>">
+                                                        <textarea class="form-control reply-textarea" id="replyText<?= $rid ?>"
+                                                                  rows="3" placeholder="Type your reply to <?= $mfname ?>..."></textarea>
+                                                        <div class="d-flex justify-content-end gap-2 mt-2">
+                                                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                                                                    onclick="toggleReplyBox(<?= $rid ?>, false)">Cancel</button>
+                                                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3"
+                                                                    onclick="sendReply(<?= $rid ?>)">
+                                                                <i class="bi bi-send-fill me-1"></i> Send
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer border-0" id="viewFooter<?= $rid ?>">
+                                                    <button type="button" class="btn btn-primary rounded-pill px-4"
+                                                            id="replyBtn<?= $rid ?>"
+                                                            onclick="toggleReplyBox(<?= $rid ?>, true)">
+                                                        <i class="bi bi-reply-fill me-1"></i>
+                                                        <?= ($lastMsg && $lastMsg['side'] === 'admin') ? 'Reply Again' : 'Reply' ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="5" class="py-5 text-muted fst-italic">No messages found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end tab-content -->
+</div><!-- end container -->
+
+
+<!-- Delete message form -->
+<form id="deleteMsgForm" method="POST" action="admn_messages.php" style="display:none;">
+    <input type="hidden" name="id_resident" id="deleteMsgId">
+    <input type="hidden" name="delete_msg"   value="1">
+</form>
+
+<!-- Bulk delete messages form -->
+<form id="bulkDeleteForm" method="POST" action="admn_messages.php" style="display:none;">
+    <input type="hidden" name="bulk_delete_msg" value="1">
+    <div id="bulkDeleteIds"></div>
+</form>
+
+<!-- Reply to message form -->
+<form id="replyForm" method="POST" action="admn_messages.php" style="display:none;">
+    <input type="hidden" name="id_resident" id="replyMsgId">
+    <input type="hidden" name="reply_text"   id="replyMsgText">
+    <input type="hidden" name="reply_msg"    value="1">
+</form>
+
+
+<!-- ════════════════════════════════════════════════════════
+     APPROVE MODAL
+═══════════════════════════════════════════════════════════ -->
+
+
+
+<!-- ════════════════════════════════════════════════════════
+     DELETE MESSAGE MODAL
+═══════════════════════════════════════════════════════════ -->
+<div id="deleteMsgModal" class="bmis-modal-backdrop">
+  <div class="bmis-modal-card">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+      <div class="bmis-modal-icon" style="background:#fee2e2;">
+        <i class="bi bi-trash-fill" style="color:#dc2626; font-size:18px;"></i>
+      </div>
+      <div>
+        <p class="bmis-modal-title">Move to Archive</p>
+        <p class="bmis-modal-sub">You can restore it later from Archive.</p>
+      </div>
+    </div>
+    <hr style="margin:16px 0; border-color:#e5e7eb;">
+    <div class="bmis-modal-info" style="background:#fef2f2; border:1.5px solid #fecaca;">
+      <i class="bi bi-chat-left-dots-fill" style="color:#dc2626; font-size:20px; flex-shrink:0;"></i>
+      <div>
+        <p id="deleteMsgModalName" style="font-size:14px; font-weight:700; color:#991b1b;"></p>
+        <p style="font-size:12px; color:#b91c1c;">This conversation will be moved to Archive. You can restore or permanently delete it from there.</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="bmis-btn-cancel" onclick="closeAllModals()">Cancel</button>
+      <button class="bmis-btn-confirm" style="background:linear-gradient(135deg,#dc2626,#ef4444);"
+              onclick="document.getElementById('deleteMsgForm').submit();">
+        <i class="bi bi-trash-fill me-1"></i> Yes, delete
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     BULK DELETE MESSAGES MODAL
+═══════════════════════════════════════════════════════════ -->
+<div id="bulkDeleteModal" class="bmis-modal-backdrop">
+  <div class="bmis-modal-card">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+      <div class="bmis-modal-icon" style="background:#fee2e2;">
+        <i class="bi bi-trash-fill" style="color:#dc2626; font-size:18px;"></i>
+      </div>
+      <div>
+        <p class="bmis-modal-sub">You can restore them later from Archive.</p>
+      </div>
+    </div>
+    <hr style="margin:16px 0; border-color:#e5e7eb;">
+    <div class="bmis-modal-info" style="background:#fef2f2; border:1.5px solid #fecaca;">
+      <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626; font-size:20px; flex-shrink:0;"></i>
+      <div>
+        <p id="bulkDeleteCount" style="font-size:14px; font-weight:700; color:#991b1b;"></p>
+        <p style="font-size:12px; color:#b91c1c;">All selected conversations will be moved to Archive. You can restore or permanently delete them from there.</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="bmis-btn-cancel" onclick="closeAllModals()">Cancel</button>
+      <button class="bmis-btn-confirm" style="background:linear-gradient(135deg,#dc2626,#ef4444);"
+              onclick="submitBulkDelete()">
+        <i class="bi bi-trash-fill me-1"></i> Yes, delete all
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     SUCCESS TOAST
+═══════════════════════════════════════════════════════════ -->
+<div id="bmisToast">
+  <div id="bmisToastInner">
+    <div id="bmisToastIcon">
+      <i id="bmisToastIconI"></i>
+    </div>
+    <div style="flex:1; min-width:0;">
+      <p id="bmisToastTitle" style="font-size:13px; font-weight:700; margin:0 0 2px;"></p>
+      <p id="bmisToastMsg"   style="font-size:12px; margin:0; color:#6b7280; line-height:1.4;"></p>
+    </div>
+    <button onclick="closeToast()" style="background:none; border:none; cursor:pointer; color:#9ca3af; font-size:16px; padding:0; flex-shrink:0; line-height:1;">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</div>
+
+
+<script>
+// ── Modal openers ────────────────────────────────────────────
+function openApproveModal(uploadId, residentId, name) {
+    document.getElementById('approveUploadId').value   = uploadId;
+    document.getElementById('approveResidentId').value = residentId;
+    document.getElementById('approveModalName').textContent = name;
+    document.getElementById('approveModal').classList.add('open');
+}
+
+function openRejectModal(uploadId, residentId, name) {
+    document.getElementById('rejectUploadId').value    = uploadId;
+    document.getElementById('rejectResidentId').value  = residentId;
+    document.getElementById('rejectModalName').textContent = name;
+    document.getElementById('rejectReasonInput').value = '';
+    document.getElementById('rejectModal').classList.add('open');
+}
+
+function openDeleteUploadModal(uploadId, name) {
+    document.getElementById('deleteUploadId').value = uploadId;
+    document.getElementById('deleteUploadModalName').textContent = name;
+    document.getElementById('deleteUploadModal').classList.add('open');
+}
+
+function openDeleteMsgModal(msgId, name) {
+    document.getElementById('deleteMsgId').value = msgId;
+    document.getElementById('deleteMsgModalName').textContent = 'Conversation with ' + name;
+    document.getElementById('deleteMsgModal').classList.add('open');
+}
+
+function closeAllModals() {
+    document.querySelectorAll('.bmis-modal-backdrop').forEach(m => m.classList.remove('open'));
+}
+
+function submitReject() {
+    document.getElementById('rejectReason').value = document.getElementById('rejectReasonInput').value;
+    document.getElementById('rejectForm').submit();
+}
+
+// Close on backdrop click
+document.querySelectorAll('.bmis-modal-backdrop').forEach(function(m) {
+    m.addEventListener('click', function(e) { if (e.target === m) closeAllModals(); });
+});
+
+
+// ── Bulk select / delete ──────────────────────────────────────
+
+function toggleSelectAll(cb) {
+    document.querySelectorAll('.msg-checkbox').forEach(function(c) {
+        c.checked = cb.checked;
+        c.closest('tr').classList.toggle('row-selected', cb.checked);
+    });
+    updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+    var checked    = document.querySelectorAll('.msg-checkbox:checked');
+    var all        = document.querySelectorAll('.msg-checkbox');
+    var toolbar    = document.getElementById('bulkToolbar');
+    var selectAll  = document.getElementById('selectAllMsgs');
+    var countLabel = document.getElementById('selectedCount');
+
+    // Update each row's highlight
+    document.querySelectorAll('.msg-checkbox').forEach(function(c) {
+        c.closest('tr').classList.toggle('row-selected', c.checked);
+    });
+
+    // Show/hide toolbar
+    if (checked.length > 0) {
+        toolbar.classList.remove('d-none');
+        toolbar.classList.add('d-flex');
+    } else {
+        toolbar.classList.add('d-none');
+        toolbar.classList.remove('d-flex');
+    }
+
+    countLabel.textContent = checked.length + ' message' + (checked.length !== 1 ? 's' : '') + ' selected';
+
+    // Header checkbox state
+    selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+    selectAll.checked       = all.length > 0 && checked.length === all.length;
+}
+
+function clearSelection() {
+    document.querySelectorAll('.msg-checkbox').forEach(function(c) {
+        c.checked = false;
+        c.closest('tr').classList.remove('row-selected');
+    });
+    var selectAll = document.getElementById('selectAllMsgs');
+    selectAll.checked       = false;
+    selectAll.indeterminate = false;
+    updateBulkToolbar();
+}
+
+function openBulkDeleteModal() {
+    var count = document.querySelectorAll('.msg-checkbox:checked').length;
+    document.getElementById('bulkDeleteCount').textContent =
+        count + ' message' + (count !== 1 ? 's' : '') + ' will be permanently deleted.';
+    document.getElementById('bulkDeleteModal').classList.add('open');
+}
+
+function submitBulkDelete() {
+    var ids       = Array.from(document.querySelectorAll('.msg-checkbox:checked')).map(function(c) { return c.value; });
+    var container = document.getElementById('bulkDeleteIds');
+    container.innerHTML = ids.map(function(id) {
+        return '<input type="hidden" name="msg_ids[]" value="' + id + '">';
+    }).join('');
+    document.getElementById('bulkDeleteForm').submit();
+}
+
+
+// ── Reply to message ──────────────────────────────────────────
+function toggleReplyBox(mid, show) {
+    var box = document.getElementById('replyBox' + mid);
+    var btn = document.getElementById('replyBtn' + mid);
+    if (!box) return;
+
+    if (show) {
+        box.classList.remove('d-none');
+        btn.classList.add('d-none');
+        document.getElementById('replyText' + mid).focus();
+        scrollChatThreadToBottom(box.closest('.chat-thread-bg'));
+    } else {
+        box.classList.add('d-none');
+        btn.classList.remove('d-none');
+        document.getElementById('replyText' + mid).value = '';
+    }
+}
+
+function scrollChatThreadToBottom(threadEl) {
+    if (!threadEl) return;
+    // Wait a frame so newly-revealed elements (e.g. the reply box) are
+    // already laid out before we measure scrollHeight.
+    requestAnimationFrame(function () {
+        threadEl.scrollTop = threadEl.scrollHeight;
+    });
+}
+
+// Jump straight to the most recent message whenever a conversation modal opens
+document.addEventListener('shown.bs.modal', function (e) {
+    var thread = e.target.querySelector('.chat-thread-bg');
+    scrollChatThreadToBottom(thread);
+});
+
+function sendReply(mid) {
+    var textarea = document.getElementById('replyText' + mid);
+    var text     = textarea.value.trim();
+    if (text === '') {
+        textarea.focus();
+        return;
+    }
+    document.getElementById('replyMsgId').value   = mid;
+    document.getElementById('replyMsgText').value = text;
+    document.getElementById('replyForm').submit();
+}
+
+
+// ── Toast ────────────────────────────────────────────────────
+var toastConfigs = {
+    approved:      { type: 'success', title: 'Approved',  msg: 'Resident account has been verified successfully.' },
+    rejected:      { type: 'warning', title: 'Rejected',  msg: 'ID submission rejected. Resident has been notified.' },
+    upload_deleted:{ type: 'delete',  title: 'Deleted',   msg: 'ID submission record permanently deleted.' },
+    msg_deleted:   { type: 'delete',  title: 'Archived',   msg: 'Conversation(s) moved to Archive.' },
+    reply_sent:    { type: 'success', title: 'Reply Sent', msg: 'Your reply has been sent to the resident.' },
+    error:         { type: 'error',   title: 'Error',     msg: 'Something went wrong. Please try again.' },
+};
+
+function showToast(cfg) {
+    var isSuccess = cfg.type === 'success';
+    var isWarning = cfg.type === 'warning';
+    var isError   = cfg.type === 'error';
+
+    var bg        = isSuccess ? '#f0fdf4' : (isWarning ? '#fffbeb' : (isError ? '#fef2f2' : '#fef2f2'));
+    var border    = isSuccess ? '#bbf7d0' : (isWarning ? '#fde68a' : (isError ? '#fecaca' : '#fecaca'));
+    var iconBg    = isSuccess ? '#d1fae5' : (isWarning ? '#fef3c7' : '#fee2e2');
+    var iconColor = isSuccess ? '#059669' : (isWarning ? '#d97706' : '#dc2626');
+    var iconCls   = isSuccess ? 'bi-check-circle-fill' : (isWarning ? 'bi-exclamation-circle-fill' : 'bi-trash-fill');
+
+    var inner = document.getElementById('bmisToastInner');
+    inner.style.background = bg;
+    inner.style.border     = '1.5px solid ' + border;
+
+    var icon = document.getElementById('bmisToastIcon');
+    icon.style.background  = iconBg;
+
+    var iconI = document.getElementById('bmisToastIconI');
+    iconI.className        = 'bi ' + iconCls;
+    iconI.style.color      = iconColor;
+    iconI.style.fontSize   = '16px';
+
+    var titleEl = document.getElementById('bmisToastTitle');
+    titleEl.textContent    = cfg.title;
+    titleEl.style.color    = iconColor;
+
+    document.getElementById('bmisToastMsg').textContent = cfg.msg;
+    document.getElementById('bmisToast').style.display  = 'block';
+
+    setTimeout(closeToast, 4500);
+}
+
+function closeToast() {
+    var t = document.getElementById('bmisToast');
+    t.style.opacity    = '0';
+    t.style.transition = 'opacity 0.3s';
+    setTimeout(function() { t.style.display = 'none'; t.style.opacity = ''; t.style.transition = ''; }, 300);
+}
+
+// Read ?toast= param and fire toast on load
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var key    = params.get('toast');
+    if (key && toastConfigs[key]) {
+        showToast(toastConfigs[key]);
+        history.replaceState(null, '', window.location.pathname);
+    }
+})();
+</script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script>
+// ── Auto-poll messages & ID uploads every 8 seconds ───────────
+(function () {
+    function poll() {
+        // Don't refresh if a modal is open
+        if (document.querySelector('.modal.show')) return;
+
+        fetch('ajax_messages.php')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                // Update messages tbody
+                var tbody = document.getElementById('messages-tbody');
+                if (tbody) tbody.innerHTML = data.messages_html;
+
+                // The rows just swapped in are freshly rendered and unchecked, but the
+                // bulk-delete toolbar has its own d-none/d-flex state that this replacement
+                // doesn't touch — without this, the toolbar could stay stuck open from a
+                // selection that existed before this refresh.
+                clearSelection();
+
+                // Update badges
+                var badgeMsg = document.getElementById('badge-msg-count');
+                if (badgeMsg) {
+                    badgeMsg.textContent = data.msg_count > 0 ? data.msg_count : '';
+                }
+                var badgeId = document.getElementById('badge-id-pending');
+                if (badgeId) {
+                    badgeId.textContent = data.pending_count;
+                    badgeId.classList.toggle('d-none', data.pending_count === 0);
+                }
+            })
+            .catch(function () {});
+    }
+
+    poll();
+    setInterval(poll, 60000);
+})();
+
+// Some browsers restore the page from cache on back/forward or refresh (bfcache),
+// which can bring back a stale "Delete Selected" toolbar state even though nothing
+// on the fresh page is actually checked. Force it closed every time the page is shown.
+window.addEventListener('pageshow', function () {
+    clearSelection();
+});
+</script>
+    
+</body>
+    <?php include('dashboard_sidebar_end.php'); ?>
+</html>

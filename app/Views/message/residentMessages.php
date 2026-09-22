@@ -1,0 +1,683 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head> 
+    <title>Messages - Barangay San Pedro</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/pwa/favicon-32x32.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> 
+    <script src="https://kit.fontawesome.com/67a9b7069e.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+
+    <style>
+        /* ----- GLOBAL RESETS ----- */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            background: #f0f2f5;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+        }
+
+        /* ----- PAGE WRAPPER ----- */
+        .page-wrapper {
+            max-width: 780px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 12px 12px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* On mobile, add padding for the bottom nav */
+        @media (max-width: 767px) {
+            .page-wrapper {
+                padding-bottom: 0;
+                height: 100vh;
+                max-height: 100vh;
+            }
+        }
+
+        /* ----- VERIFICATION BANNER ----- */
+        .verify-banner {
+            border-left: 5px solid #ffc107;
+            border-radius: 16px;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 0.75rem;
+            background: #fff3cd;
+            flex-shrink: 0;
+        }
+        .verify-banner .btn-upload-sm {
+            background: #ffc107;
+            border-radius: 40px;
+            font-weight: 600;
+            padding: 0.3rem 1.2rem;
+            font-size: 0.85rem;
+            color: #1c1e21;
+            border: none;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .verify-banner .btn-upload-sm:hover {
+            background: #e0a800;
+        }
+
+        /* ----- MESSENGER CARD ----- */
+        .messenger-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            border: 1px solid rgba(0,0,0,0.04);
+            height: 100%;
+        }
+
+        /* ----- HEADER ----- */
+        .messenger-header {
+            background: linear-gradient(135deg, #1b74e4 0%, #0a5ecf 100%);
+            color: #fff;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .messenger-header .admin-avatar {
+            width: 44px;
+            height: 44px;
+            background: #fff;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .messenger-header .admin-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .online-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #4ade80;
+            border-radius: 50%;
+            margin-right: 5px;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+        }
+        .messenger-header .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+        .messenger-header .btn-header {
+            border-radius: 40px;
+            padding: 0.35rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            transition: background 0.2s;
+        }
+        .messenger-header .btn-header:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        /* ----- CHAT BODY ----- */
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 16px 8px;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 0;
+            scroll-behavior: smooth;
+        }
+        .chat-day-label {
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #8a8f9a;
+            margin: 8px 0 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* ----- BUBBLES ----- */
+        .bubble-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .bubble-row.me {
+            flex-direction: row-reverse;
+        }
+        .bubble-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .bubble-avatar.admin-av { background: #fff; border: 1px solid rgba(0,0,0,0.08); overflow: hidden; }
+        .bubble-avatar.admin-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .bubble-avatar.me-av    { background: #6c757d; color: #fff; }
+
+        .bubble {
+            max-width: 72%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            position: relative;
+            word-break: break-word;
+        }
+        .bubble.admin {
+            background: #fff;
+            color: #1a1a2e;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .bubble.me {
+            background: #1b74e4;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 1px 3px rgba(27, 116, 228, 0.25);
+        }
+        .bubble-time {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            margin-top: 4px;
+            display: block;
+        }
+        .bubble.me .bubble-time { text-align: right; color: #dbeafe; opacity: 0.85; }
+        .bubble.admin .bubble-time { color: #8a8f9a; }
+
+        .bubble-delete {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+            padding: 0 0 0 4px;
+            align-self: center;
+        }
+        .bubble-row:hover .bubble-delete { opacity: 1; }
+
+        /* ----- EMPTY STATE ----- */
+        .chat-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #8a8f9a;
+            padding: 40px 0;
+        }
+        .chat-empty i { font-size: 2.8rem; opacity: 0.3; margin-bottom: 10px; }
+
+        /* ===== FIXED INPUT BAR AT BOTTOM ===== */
+        .chat-input-wrapper {
+            flex-shrink: 0;
+            background: #fff;
+            border-top: 1px solid #e9ecef;
+            padding: 10px 14px;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+        
+        /* On mobile, account for the bottom nav */
+        @media (max-width: 767px) {
+            .chat-input-wrapper {
+                padding-bottom: 10px;
+            }
+        }
+
+        .chat-input-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            max-width: 780px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .chat-input-bar textarea {
+            flex: 1;
+            border: 1.5px solid #dee2e6;
+            border-radius: 22px;
+            padding: 9px 16px;
+            font-size: 0.92rem;
+            resize: none;
+            outline: none;
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.4;
+            transition: border-color 0.2s;
+            font-family: inherit;
+            background: #f8f9fa;
+        }
+        .chat-input-bar textarea:focus {
+            border-color: #1b74e4;
+            box-shadow: 0 0 0 3px rgba(27, 116, 228, 0.12);
+            background: #fff;
+        }
+        .chat-send-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1b74e4;
+            color: #fff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .chat-send-btn:hover   { background: #0a5ecf; }
+        .chat-send-btn:active  { transform: scale(0.93); }
+
+        /* ----- ID UPLOAD HISTORY TABLE ----- */
+        .id-history-card {
+            border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.04);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .id-history-card .card-header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 0.6rem 1rem;
+        }
+        .status-pending  { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-approved { background: #d1e7dd; color: #0f5132; border: 1px solid #198754; }
+        .status-rejected { background: #f8d7da; color: #842029; border: 1px solid #dc3545; }
+
+        /* ----- UPLOAD ZONE ----- */
+        .upload-zone {
+            border: 2px dashed #1b74e4;
+            border-radius: 12px;
+            background: #f8f9ff;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .upload-zone i { font-size: 2.2rem; color: #1b74e4; display: block; margin-bottom: 0.5rem; }
+
+        /* ----- MODAL ----- */
+        .modal-content {
+            border: none;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .modal-header-warning {
+            background: #ffc107;
+            color: #1c1e21;
+            border: none;
+            padding: 1.25rem 1.5rem;
+        }
+
+        /* ----- RESPONSIVE TWEAKS ----- */
+        @media (max-width: 576px) {
+            .messenger-header {
+                padding: 10px 14px;
+                flex-wrap: wrap;
+            }
+            .messenger-header .header-actions {
+                width: 100%;
+                margin-left: 0;
+                justify-content: flex-end;
+            }
+            .messenger-header .btn-header {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.8rem;
+            }
+            .bubble {
+                max-width: 82%;
+                font-size: 0.88rem;
+                padding: 8px 12px;
+            }
+            .bubble-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.7rem;
+            }
+            .chat-body {
+                padding: 10px 10px 4px;
+            }
+            .chat-input-wrapper {
+                padding: 8px 10px;
+            }
+            .chat-input-bar textarea {
+                font-size: 0.88rem;
+                padding: 7px 12px;
+                border-radius: 18px;
+            }
+            .chat-send-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 0.9rem;
+            }
+            /* Extra padding for mobile bottom nav */
+            .page-wrapper {
+                padding-bottom: 0;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 991px) {
+            .messenger-header .btn-header {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.9rem;
+            }
+        }
+        
+        /* Ensure the chat body scrolls properly */
+        .chat-body::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-body::-webkit-scrollbar-thumb {
+            background: #c1c7cd;
+            border-radius: 10px;
+        }
+        .chat-body::-webkit-scrollbar-thumb:hover {
+            background: #a8b0b8;
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<?php include __DIR__ . '/resident_navbar.php'; ?>
+
+<div class="page-wrapper">
+
+    <!-- VERIFICATION NOTICE -->
+    <?php if (!$is_verified): ?>
+    <div class="verify-banner d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:1.8rem;">&#x1F512;</span>
+            <div>
+                <h6 class="fw-bold mb-0">Account Not Yet Verified</h6>
+                <p class="mb-0 small text-muted">Upload a valid ID for admin approval.</p>
+            </div>
+        </div>
+        <a href="resident_messages.php?upload_id=1" class="btn-upload-sm">
+            <i class="bi bi-upload me-1"></i> Upload ID
+        </a>
+    </div>
+    <?php else: ?>
+    <div class="alert alert-success border-0 shadow-sm rounded-4 mb-3 py-2 px-3 small flex-shrink-0" role="alert">
+        <i class="bi bi-patch-check-fill me-2"></i> <strong>Account Verified</strong> &mdash; You have full access to all barangay services.
+    </div>
+    <?php endif; ?>
+
+    <!-- ID UPLOAD HISTORY -->
+    <?php if (!empty($id_uploads) && !$is_verified): ?>
+    <div class="id-history-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h6 class="fw-bold mb-0 small"><i class="bi bi-card-image me-2 text-primary"></i>ID Submission History</h6>
+            <button class="btn btn-link btn-sm text-muted p-0" data-bs-toggle="collapse" data-bs-target="#idHistoryTable">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+        <div class="collapse show" id="idHistoryTable">
+            <div class="p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-2 px-3">File</th>
+                                <th class="py-2">Date</th>
+                                <th class="py-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($id_uploads as $up): ?>
+                            <tr>
+                                <td class="px-3 align-middle">
+                                    <i class="bi bi-file-earmark-image me-1 text-primary"></i>
+                                    <?= htmlspecialchars($up['original_name']); ?>
+                                </td>
+                                <td class="align-middle text-muted"><?= date('M d, Y', strtotime($up['upload_date'])); ?></td>
+                                <td class="align-middle">
+                                    <?php if ($up['status'] === 'approved'): ?>
+                                        <span class="badge rounded-pill status-approved px-2">&#x2705; Approved</span>
+                                    <?php elseif ($up['status'] === 'rejected'): ?>
+                                        <span class="badge rounded-pill status-rejected px-2">&#x274C; Rejected</span>
+                                    <?php else: ?>
+                                        <span class="badge rounded-pill status-pending px-2">&#x23F3; Pending</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ═══ MESSENGER WINDOW ═══ -->
+    <div class="messenger-card">
+
+        <!-- Header -->
+        <div class="messenger-header">
+            <div class="admin-avatar"><img src="icons/logo.png" alt="Barangay San Pedro"></div>
+            <div>
+                <div class="fw-bold" style="font-size:1rem;">Barangay Administration</div>
+                <div style="font-size:0.78rem; opacity:0.85;">
+                    <span class="online-dot"></span> Barangay San Pedro, Iriga City
+                </div>
+            </div>
+            <?php if (!$is_verified): ?>
+            <div class="header-actions">
+                <button class="btn-header" data-bs-toggle="modal" data-bs-target="#uploadIDModal">
+                    <i class="bi bi-upload me-1"></i><span class="d-none d-sm-inline">Upload ID</span>
+                </button>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Chat Messages Body -->
+        <div class="chat-body" id="chatBody">
+            <?php if (empty($all_messages)): ?>
+                <div class="chat-empty">
+                    <i class="bi bi-chat-dots"></i>
+                    <div class="fw-semibold">No messages yet</div>
+                    <small>Send a message to the Barangay Administration below.</small>
+                </div>
+            <?php else: ?>
+                <?php
+                $prev_date = '';
+                foreach ($all_messages as $msg):
+                    $this_date = date('F j, Y', strtotime($msg['date_sent']));
+                    if ($this_date !== $prev_date):
+                        $prev_date = $this_date;
+                ?>
+                    <div class="chat-day-label">— <?= $this_date ?> —</div>
+                <?php endif; ?>
+
+                <?php
+                    $side = $msg['side'];
+                    $is_me = ($side === 'me');
+                    $time_str = date('h:i A', strtotime($msg['date_sent']));
+                ?>
+                <div class="bubble-row <?= $is_me ? 'me' : 'admin' ?>">
+                    <div class="bubble-avatar <?= $is_me ? 'me-av' : 'admin-av' ?>">
+                        <?php if ($is_me): ?>
+                        <i class="bi bi-person-fill"></i>
+                        <?php else: ?>
+                        <img src="icons/logo.png" alt="Barangay San Pedro">
+                        <?php endif; ?>
+                    </div>
+                    <div class="bubble <?= $is_me ? 'me' : 'admin' ?>">
+                        <?= nl2br(htmlspecialchars($msg['message_text'])) ?>
+                        <span class="bubble-time"><?= $time_str ?></span>
+                    </div>
+                    <?php if (!$is_me && !empty($msg['id_msg'])): ?>
+                    <form action="" method="POST" class="d-inline" onsubmit="return confirm('Delete this message?');">
+                        <input type="hidden" name="id_msg" value="<?= $msg['id_msg'] ?>">
+                        <button type="submit" name="delete_msg" class="bubble-delete" title="Delete">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </form>
+                    <?php endif; ?>
+                </div>
+
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- ===== FIXED INPUT BAR AT BOTTOM ===== -->
+        <div class="chat-input-wrapper">
+            <div class="chat-input-bar">
+                <form action="" method="POST" id="msgForm" style="display:contents; width:100%;">
+                    <textarea name="admin_message_text" id="msgInput" rows="1"
+                        placeholder="Write a message to the Barangay..." required
+                        oninput="autoResize(this)"
+                        onkeydown="handleEnter(event)"></textarea>
+                    <button type="submit" name="send_to_admin" class="chat-send-btn" title="Send">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end page-wrapper -->
+
+<!-- UPLOAD VALID ID MODAL -->
+<div class="modal fade" id="uploadIDModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="" method="POST" enctype="multipart/form-data">
+                <div class="modal-header modal-header-warning">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-upload me-2"></i>Upload Valid ID</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="upload-zone">
+                        <i class="bi bi-card-image"></i>
+                        <p class="mb-2 fw-bold">Select your Valid ID photo or PDF</p>
+                        <small class="text-muted d-block mb-3">JPG, PNG, or PDF &bull; Max 5MB</small>
+                        <input type="file" name="valid_id_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-bold">Additional Note <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea name="id_note" class="form-control" rows="2"
+                                  placeholder="e.g., PhilSys ID - front and back combined..."></textarea>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 rounded-3 mt-3 mb-0" style="font-size:0.85rem;">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Accepted: PhilSys, Driver's License, Passport, Voter's ID, Senior Citizen ID, SSS/GSIS ID, PRC ID
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="upload_valid_id" class="btn btn-warning fw-bold rounded-pill px-4">
+                        <i class="bi bi-cloud-upload me-2"></i> Submit ID
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-scroll to bottom of chat
+const chatBody = document.getElementById('chatBody');
+if (chatBody) {
+    chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+// Auto-resize textarea
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Send on Enter (Shift+Enter = newline)
+function handleEnter(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const textarea = document.getElementById('msgInput');
+        if (textarea.value.trim()) {
+            document.getElementById('msgForm').submit();
+        }
+    }
+}
+
+// Auto-open upload modal if triggered via URL
+<?php if ($auto_open_upload && !$has_pending && !$has_approved && !$is_verified): ?>
+window.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('uploadIDModal')).show();
+});
+<?php endif; ?>
+
+// ── Auto-refresh the chat thread every 5 seconds ────────────────────────────
+(function () {
+    let lastCount = <?= (int)count($all_messages) ?>;
+
+    function isNearBottom() {
+        return chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight < 80;
+    }
+
+    function poll() {
+        if (document.querySelector('.modal.show')) return;
+
+        fetch('ajax_resident_chat.php')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || data.error || !chatBody) return;
+
+                const wasNearBottom = isNearBottom();
+                const hasNewMessage = data.count > lastCount;
+                lastCount = data.count;
+
+                chatBody.innerHTML = data.chat_html;
+
+                if (hasNewMessage && wasNearBottom) {
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }
+            })
+            .catch(function () {});
+    }
+
+    setInterval(poll, 5000);
+})();
+</script>
+</body>
+</html>

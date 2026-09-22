@@ -1,0 +1,505 @@
+<?php 
+
+    require_once('main.class.php');
+    require_once __DIR__ . '/security.php';
+
+    class StaffClass extends BMISClass {
+
+        
+        //authentication method for residents to enter
+        public function residentlogin() {
+        if(isset($_POST['residentlogin'])) {
+
+            $username = $_POST['email'];
+            $password = $_POST['password']; 
+        
+            $connection = $this->openConn();
+            $stmt = $connection->prepare("SELECT * FROM tbl_residents WHERE email = ? AND password = ?");
+            $stmt->Execute([$username, $password]);
+            $user = $stmt->fetch();
+            $total = $stmt->rowCount();
+            
+                //calls the set_userdata function 
+                if($total > 0) {
+                    $this->set_userdata($user);
+                    header('Location: resident_homepage.php');
+                }
+                
+                else {
+                    echo '<script>alert("Email or Password is Invalid")</script>';
+                }
+            }
+        }
+    
+
+    
+    //------------------------------------- CRUD FUNCTIONS FOR STAFF -----------------------------------------------
+
+public function create_staff() {
+    if(isset($_POST['add_staff'])) {
+        $login_identity = $_POST['login_identity'];
+        $plain_password = $_POST['password'];
+        $hashed_password = password_hash($plain_password, PASSWORD_DEFAULT);
+
+        $lname = $_POST['lname'];
+        $fname = $_POST['fname'];
+        $mi = $_POST['mi'];
+        $age = $_POST['age'];
+        $sex = $_POST['sex'];
+        $address = $_POST['address'];
+        $contact = $_POST['contact'];
+        $position = $_POST['position'];
+        $role = $_POST['role'];
+        $addedby = $_POST['addedby'];
+
+        $email_to_save = "";
+        $phone_to_save = "";
+
+        // Logic: If it has an '@', treat as email; otherwise, treat as phone
+        if (filter_var($login_identity, FILTER_VALIDATE_EMAIL)) {
+            $email_to_save = $login_identity;
+        } else {
+            $phone_to_save = $login_identity;
+        }
+
+        if ($this->check_staff($login_identity) == 0) {
+            
+            if ($age < 18) {
+                echo "<script>alert('Sorry, you are underaged to register an account');</script>";
+                return;
+            }
+
+            // --- PHOTO UPLOAD LOGIC ---
+            $photo = ""; 
+            if(isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
+                $target_dir = "uploads/";
+                if (!is_dir($target_dir)) {
+                    mkdir($target_dir, 0755, true);
+                }
+
+                // Content-sniffed validation + random filename — never trust
+                // the uploaded file's original name or extension directly.
+                $validated = bmis_validate_image_upload($_FILES['photo']);
+                if ($validated['ok']) {
+                    $target_file = $target_dir . time() . "_" . $validated['safe_name'];
+                    if (move_uploaded_file($_FILES["photo"]["tmp_name"], $target_file)) {
+                        $photo = $target_file; 
+                    }
+                }
+            }
+
+            // 2. Insert into tbl_user
+            $connection = $this->openConn();
+            // ADDED `login_identity` to the column list below
+            $stmt = $connection->prepare("INSERT INTO tbl_user (
+                `login_identity`, `email`, `phone_number`, `password`, `lname`, `fname`, 
+                `mi`, `age`, `sex`, `address`, `contact`, `position`, `role`, `addedby`, `photo`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            // ADDED $login_identity to the execution array below
+            $stmt->execute([  
+                $login_identity, 
+                $email_to_save, 
+                $phone_to_save, 
+                $hashed_password, 
+                $lname, $fname, $mi, $age, $sex, 
+                $address, $contact, $position, $role, $addedby, $photo
+            ]);
+
+            echo "<script>alert('New Staff Added Successfully'); window.location.href='admn_staff_crud.php';</script>";
+        } else {
+            echo "<script>alert('This Identity is already registered.');</script>";
+        }
+    } 
+}
+
+        public function view_staff(){
+
+            $connection = $this->openConn();
+
+            $stmt = $connection->prepare("SELECT * from tbl_user");
+            $stmt->execute();
+            $view = $stmt->fetchAll();
+            //$rows = $stmt->
+            return $view;
+           
+        }
+
+
+public function update_staff() {
+    if (isset($_POST['update_staff'])) {
+        $id_user = $_GET['id_user'];
+        $login_identity = $_POST['login_identity'];
+        
+        $lname = $_POST['lname'];
+        $fname = $_POST['fname'];
+        $mi = $_POST['mi'];
+        $sex = $_POST['sex'];
+        $address = $_POST['address'];
+        $contact = $_POST['contact'];
+        $position = $_POST['position'];
+        $role = $_POST['role'];
+        $addedby = $_POST['addedby'];
+
+        // Split identity for storage
+        $email_to_save = "";
+        $phone_to_save = "";
+        if (filter_var($login_identity, FILTER_VALIDATE_EMAIL)) {
+            $email_to_save = $login_identity;
+        } else {
+            $phone_to_save = $login_identity;
+        }
+
+        $connection = $this->openConn();
+
+        // --- PASSWORD LOGIC ---
+        $password_query = "";
+        $password_param = [];
+        if (!empty($_POST['password'])) {
+            $password_query = " `password` = ?, ";
+            $password_param[] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        }
+
+        // --- PHOTO UPLOAD LOGIC ---
+        $photo_query = "";
+        $photo_param = [];
+
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
+            // Define your upload path here
+            $target_dir = "uploads/"; 
+            $validated  = bmis_validate_image_upload($_FILES['photo']);
+
+            if ($validated['ok']) {
+                $target_file = $target_dir . time() . "_" . $validated['safe_name'];
+
+                if (move_uploaded_file($_FILES["photo"]["tmp_name"], $target_file)) {
+                    // Delete old photo
+                    $stmt_old = $connection->prepare("SELECT photo FROM tbl_user WHERE id_user = ?");
+                    $stmt_old->execute([$id_user]);
+                    $old_photo = $stmt_old->fetch();
+
+                    if ($old_photo && !empty($old_photo['photo']) && file_exists($old_photo['photo'])) {
+                        unlink($old_photo['photo']);
+                    }
+
+                    $photo_query = ", `photo` = ?";
+                    $photo_param[] = $target_file;
+                }
+            }
+        }
+
+        // --- PREPARE SQL & PARAMS ---
+        $params = array_merge(
+            $password_param, 
+            [$login_identity, $email_to_save, $phone_to_save, $lname, $fname, $mi, $sex, $address, $contact, $position, $role, $addedby],
+            $photo_param
+        );
+        $params[] = $id_user; 
+
+        $sql = "UPDATE tbl_user SET 
+                $password_query
+                `login_identity` = ?, 
+                `email` = ?, 
+                `phone_number` = ?, 
+                `lname` = ?, 
+                `fname` = ?, 
+                `mi` = ?, 
+                `sex` = ?, 
+                `address` = ?, 
+                `contact` = ?, 
+                `position` = ?, 
+                `role` = ?, 
+                `addedby` = ? 
+                $photo_query 
+                WHERE id_user = ?";
+        
+        $stmt = $connection->prepare($sql);
+        $stmt->execute($params);
+        
+echo "<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        icon: 'success',
+        title: 'Staff Updated',
+        text: 'The staff record was updated successfully.',
+        confirmButtonColor: '#0d6efd',
+        confirmButtonText: 'OK',
+        timer: 2000,
+        timerProgressBar: true
+    }).then(function() {
+        window.location.href = 'admn_staff_crud.php';
+    });
+});
+</script>";
+    }
+}
+        public function delete_staff(){
+    if(isset($_POST['delete_staff'])) {
+        $id_user = $_POST['id_user'];
+        $connection = $this->openConn();
+
+        // 1. Get the photo path before deleting the record
+        $stmt_find = $connection->prepare("SELECT photo FROM tbl_user WHERE id_user = ?");
+        $stmt_find->execute([$id_user]);
+        $user = $stmt_find->fetch();
+
+        // 2. Archive before delete
+        $this->archive_record('tbl_user', 'id_user', $id_user, 'staff');
+
+        // 3. Delete the physical file if it exists
+        if ($user && !empty($user['photo']) && file_exists($user['photo'])) {
+            unlink($user['photo']);
+        }
+
+        // 4. Now delete the database record
+        $stmt = $connection->prepare("DELETE FROM tbl_user WHERE id_user = ?");
+        $stmt->execute([$id_user]);
+
+        $this->log_activity('DELETE_Staff', 'Staff', "Deleted Staff Record #$id_user");
+        if (session_status() === PHP_SESSION_NONE) { session_start(); }
+    $_SESSION['swal'] = json_encode([
+        'icon'  => 'success',
+        'title' => 'Archived!',
+        'text'  => 'Staff has been moved to archive.'
+    ]);
+    session_write_close();
+    header('Location: admn_staff_crud.php');
+    exit;
+    }
+}
+
+
+    //------------------------------------- DEMOTE STAFF TO RESIDENT ----------------------------------------
+
+    public function demote_staff() {
+        if (isset($_POST['demote_staff'])) {
+            $id_user = $_POST['demote_id_user'];
+
+            $connection = $this->openConn();
+
+            // 1. Fetch the staff record
+            $stmt = $connection->prepare("SELECT * FROM tbl_user WHERE id_user = ?");
+            $stmt->execute([$id_user]);
+            $staff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$staff) {
+                $_SESSION['swal'] = json_encode([
+                    'icon'  => 'error',
+                    'title' => 'Not Found',
+                    'text'  => 'Staff record could not be found.'
+                ]);
+                return;
+            }
+
+            $email  = $staff['email']  ?? null;
+            $phone  = $staff['phone_number'] ?? null;
+
+            // The resident's verification status as it was right before promotion.
+            // Falls back to "not verified" if this staff record predates the carry-over columns.
+            $res_is_verified = isset($staff['res_is_verified']) ? (int)$staff['res_is_verified'] : 0;
+            $res_verified_at = $staff['res_verified_at'] ?? null;
+            $res_verified_by = $staff['res_verified_by'] ?? null;
+
+            // 2. Check if this person already has a resident record (by email or phone)
+            $checkStmt = $connection->prepare("SELECT COUNT(*) FROM tbl_resident WHERE email = ? OR phone_number = ?");
+            $checkStmt->execute([$email, $phone]);
+            $alreadyResident = $checkStmt->fetchColumn();
+
+            if ($alreadyResident == 0) {
+                // 3a. No resident record exists — create one from staff data
+                $login_identity = !empty($email) ? $email : $phone;
+
+                // Parse address back into components (best-effort)
+                $addressParts = explode(',', $staff['address']);
+                $houseno   = trim($addressParts[0] ?? '');
+                $street    = trim($addressParts[1] ?? '');
+                $brgy      = trim($addressParts[2] ?? '');
+                $municipal = trim($addressParts[3] ?? '');
+
+                // Determine addedby from session
+                $userdetails = $this->get_userdata();
+                $addedby = ($userdetails['surname'] ?? '') . ', ' . ($userdetails['firstname'] ?? '');
+
+                $insertStmt = $connection->prepare("INSERT INTO tbl_resident
+                    (email, phone_number, password, lname, fname, mi, sex, houseno, street, brgy, municipal,
+                     address, contact, role, addedby, status, voter, family_role, nationality, bplace, bdate, pwd,
+                     is_verified, verified_at, verified_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'resident', ?, 'Single', 'No', 'No', 'Filipino', '', CURDATE(), 'No',
+                     ?, ?, ?)");
+
+                $insertStmt->execute([
+                    $email,
+                    $phone,
+                    $staff['password'],
+                    $staff['lname'],
+                    $staff['fname'],
+                    $staff['mi'],
+                    $staff['sex'],
+                    $houseno,
+                    $street,
+                    $brgy,
+                    $municipal,
+                    $staff['address'],
+                    $staff['contact'],
+                    $addedby,
+                    $res_is_verified,
+                    $res_verified_at,
+                    $res_verified_by
+                ]);
+            } else {
+                // 3b. Resident record already exists — restore its verification status
+                // to match what it was right before this person was promoted, in case
+                // it changed (or drifted) while they were staff.
+                $updateStmt = $connection->prepare("UPDATE tbl_resident
+                    SET is_verified = ?, verified_at = ?, verified_by = ?
+                    WHERE email = ? OR phone_number = ?");
+                $updateStmt->execute([$res_is_verified, $res_verified_at, $res_verified_by, $email, $phone]);
+            }
+
+            // 4. Delete staff photo from uploads if it exists
+            if (!empty($staff['photo']) && file_exists($staff['photo'])) {
+                unlink($staff['photo']);
+            }
+
+            // 5. Archive and delete from tbl_user
+            $this->archive_record('tbl_user', 'id_user', $id_user, 'staff');
+
+            $stmt_del = $connection->prepare("DELETE FROM tbl_user WHERE id_user = ?");
+            $stmt_del->execute([$id_user]);
+
+            $this->log_activity('DEMOTE_Staff', 'Staff', "Demoted Staff #{$id_user} ({$staff['lname']}, {$staff['fname']}) — Position was: {$staff['position']}");
+
+            $_SESSION['swal'] = json_encode([
+                'icon'  => 'success',
+                'title' => 'Demoted Successfully!',
+                'text'  => $staff['fname'] . ' ' . $staff['lname'] . ' has been demoted back to Barangay Resident.'
+            ]);
+        }
+    }
+
+    //--------------------------------------------- EXTRA FUNCTIONS FOR STAFF -------------------------------------------------
+
+            public function get_single_staff($id_user){
+
+                $id_user = $_GET['id_user'];
+                
+                $connection = $this->openConn();
+                $stmt = $connection->prepare("SELECT * FROM tbl_user where id_user = ?");
+                $stmt->execute([$id_user]);
+                $user = $stmt->fetch();
+                $total = $stmt->rowCount();
+
+                if($total > 0 )  {
+                    return $user;
+                }
+                else{
+                    return false;
+                }
+            }
+
+
+        public function check_staff($id_user) {
+
+            $connection = $this->openConn();
+            $stmt = $connection->prepare("SELECT * FROM tbl_user WHERE id_user = ?");
+            $stmt->Execute([$id_user]);
+            $total = $stmt->rowCount(); 
+
+            return $total;
+        }
+
+        public function count_staff() {
+            $connection = $this->openConn();
+
+            $stmt = $connection->prepare("SELECT COUNT(*) from tbl_user");
+            $stmt->execute();
+            $staffcount = $stmt->fetchColumn();
+
+            return $staffcount;
+        }
+
+        public function count_mstaff() {
+            $connection = $this->openConn();
+
+            $stmt = $connection->prepare("SELECT COUNT(*) from tbl_user where sex = 'male'");
+            $stmt->execute();
+            $staffcount = $stmt->fetchColumn();
+
+            return $staffcount;
+        }
+
+        public function count_fstaff() {
+            $connection = $this->openConn();
+
+            $stmt = $connection->prepare("SELECT COUNT(*) from tbl_user where sex = 'female'");
+            $stmt->execute();
+            $staffcount = $stmt->fetchColumn();
+
+            return $staffcount;
+        }
+
+
+        //===================================== SCOPE CHANGED FEATURES =======================================
+
+        public function view_staff_male(){
+            $connection = $this->openConn();
+            $stmt = $connection->prepare("SELECT * from tbl_user WHERE `sex` = 'Male'");
+            $stmt->execute();   
+            $view = $stmt->fetchAll();
+            return $view;
+        }
+    
+        public function view_staff_female(){
+            $connection = $this->openConn();
+            $stmt = $connection->prepare("SELECT * from tbl_user WHERE `sex` = 'Female'");
+            $stmt->execute();
+            $view = $stmt->fetchAll();
+            return $view;
+        }
+
+
+
+
+
+
+    // ─── PAGINATED VIEW METHODS ───────────────────────────────────────────────
+
+    private function paginate(string $sql, array $params, int $perPage = 10): array {
+        $page   = max(1, (int)($_GET['page'] ?? 1));
+        $offset = ($page - 1) * $perPage;
+
+        $connection = $this->openConn();
+
+        $countStmt = $connection->prepare("SELECT COUNT(*) FROM ({$sql}) AS sub");
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+
+        $dataStmt = $connection->prepare("{$sql} LIMIT {$perPage} OFFSET {$offset}");
+        $dataStmt->execute($params);
+        $rows = $dataStmt->fetchAll();
+
+        return [
+            'rows'      => $rows,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $perPage,
+            'last_page' => (int)ceil($total / $perPage),
+        ];
+    }
+
+    public function view_staff_paginated(int $perPage = 10): array {
+        return $this->paginate("SELECT * FROM tbl_user", [], $perPage);
+    }
+
+    public function view_staff_male_paginated(int $perPage = 10): array {
+        return $this->paginate("SELECT * FROM tbl_user WHERE sex = 'Male'", [], $perPage);
+    }
+
+    public function view_staff_female_paginated(int $perPage = 10): array {
+        return $this->paginate("SELECT * FROM tbl_user WHERE sex = 'Female'", [], $perPage);
+    }
+
+}
+
+$staffbmis = new StaffClass();
+?>
