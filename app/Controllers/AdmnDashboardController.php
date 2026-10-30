@@ -34,7 +34,19 @@ $bmis->validate_staff_or_admin();
     try {
         $complaint_pending  = (int)$conn->query("SELECT COUNT(*) FROM tbl_complaints WHERE status='pending'")->fetchColumn();
         $complaint_resolved = (int)$conn->query("SELECT COUNT(*) FROM tbl_complaints WHERE status='resolved'")->fetchColumn();
-        $complaint_total    = $complaint_pending + $complaint_resolved;
+        $complaint_total    = (int)$conn->query("SELECT COUNT(*) FROM tbl_complaints")->fetchColumn();
     } catch (Exception $e) { /* table may not exist yet */ }
+
+    // ── KPI totals ──
+    $kpi_residents = 0; $kpi_certs = 0; $kpi_announcements = 0;
+    try {
+        $kpi_residents = (int)$conn->query("SELECT COUNT(*) FROM tbl_resident WHERE (is_archived = 0 OR is_archived IS NULL)")->fetchColumn();
+    } catch (Exception $e) {}
+    foreach (['tbl_rescert','tbl_indigency','tbl_clearance','tbl_bspermit','tbl_brgyid','tbl_soloparent','tbl_livestock','tbl_guardianship','tbl_goodmoral'] as $t) {
+        try { $kpi_certs += (int)$conn->query("SELECT COUNT(*) FROM $t")->fetchColumn(); } catch (Exception $e) {}
+    }
+    try {
+        $kpi_announcements = (int)$conn->query("SELECT COUNT(*) FROM tbl_announcement")->fetchColumn();
+    } catch (Exception $e) {}
 ?>
 <?php require ROOT_PATH . '/app/Views/admn_dashboard_view.php'; ?>

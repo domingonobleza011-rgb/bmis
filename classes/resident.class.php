@@ -50,13 +50,26 @@
         // 1. Check if this identity is already taken (active residents + pending applications)
         if ($this->check_resident($login_identity) == 0) {
 
-            // 2. Validate the required Valid ID upload before creating the pending application
+            // 1b. Optional profile photo (validated + saved first; removed again if anything below fails)
             $upload_error   = '';
+            $photo_filename = null;
+            if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $ph = bmis_save_profile_photo($_FILES['profile_photo']);
+                if ($ph['ok']) {
+                    $photo_filename = $ph['filename'];
+                } else {
+                    $upload_error = 'Profile photo: ' . $ph['msg'];
+                }
+            }
+
+            // 2. Validate the required Valid ID upload before creating the pending application
             $new_filename   = null;
             $original_name  = null;
             $file_type      = null;
 
-            if (!isset($_FILES['valid_id_file']) || $_FILES['valid_id_file']['error'] !== UPLOAD_ERR_OK) {
+            if ($upload_error !== '') {
+                // profile photo already failed — skip the ID step, error is shown below
+            } elseif (!isset($_FILES['valid_id_file']) || $_FILES['valid_id_file']['error'] !== UPLOAD_ERR_OK) {
                 $upload_error = 'Please upload a valid government ID to complete your registration.';
             } else {
                 $file = $_FILES['valid_id_file'];
@@ -86,6 +99,7 @@
             }
 
             if ($upload_error) {
+                bmis_delete_profile_photo($photo_filename);
                 echo "<script>alert('" . addslashes($upload_error) . "'); window.history.back();</script>";
                 return;
             }
@@ -96,8 +110,8 @@
                 `email`, `phone_number`, `password`, `lname`, `fname`, `mi`, `pwd`, `sex`,
                 `status`, `houseno`, `street`, `region`, `province`, `brgy`, `municipal`, `contact`, `bdate`,
                 `bplace`, `nationality`, `voter`, `family_role`, `role`, `addedby`,
-                `valid_id_file`, `valid_id_original_name`, `valid_id_file_type`, `application_status`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+                `valid_id_file`, `valid_id_original_name`, `valid_id_file_type`, `profile_photo`, `application_status`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
 
             $stmt->execute([
                 $email_to_save,
@@ -106,7 +120,7 @@
                 $lname, $fname, $mi, $pwd, $sex, $status,
                 $houseno, $street, $region, $province, $brgy, $municipal, $contact,
                 $bdate, $bplace, $nationality, $voter, $familyrole, $role, $addedby,
-                $new_filename, $original_name, $file_type
+                $new_filename, $original_name, $file_type, $photo_filename
             ]);
 
             if (function_exists('bmis_notify_admins_new_registration')) {
@@ -372,42 +386,25 @@ header("refresh: 0");
                 `email`, `phone_number`, `password`, `lname`, `fname`, `mi`, `pwd`, `sex`,
                 `status`, `houseno`, `street`, `region`, `province`, `brgy`, `municipal`, `contact`, `bdate`,
                 `bplace`, `nationality`, `voter`, `family_role`, `role`, `addedby`,
-                `is_verified`, `verified_at`, `verified_by`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?)");
+                `profile_photo`, `is_verified`, `verified_at`, `verified_by`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?)");
 
             $insert->execute([
                 $p['email'], $p['phone_number'], $p['password'], $p['lname'], $p['fname'], $p['mi'],
                 $p['pwd'], $p['sex'], $p['status'], $p['houseno'], $p['street'], $p['region'], $p['province'],
                 $p['brgy'], $p['municipal'], $p['contact'], $p['bdate'], $p['bplace'], $p['nationality'],
-                $p['voter'], $p['family_role'], $p['role'], $p['addedby'], $admin_name
+                $p['voter'], $p['family_role'], $p['role'], $p['addedby'], ($p['profile_photo'] ?? null), $admin_name
             ]);
 
             $new_id_resident = $connection->lastInsertId();
 
-            // ── AUTO SK-YOUTH ENROLLMENT ──────────────────────────────────
-            // SK youth membership covers residents below 30. Compute age from
-            // their birthdate (never manually entered) and, if eligible, add
-            // them straight into the SK youth records — no separate
-            // application step required. civil_status/education/employment/
-            // skills are left blank for the resident to fill in later via
-            // their youth profile; no contact number is stored here since
-            // tbl_resident.contact already has it.
-            if (!empty($p['bdate'])) {
-                $age_at_approval = (new DateTime())->diff(new DateTime($p['bdate']))->y;
-                if ($age_at_approval < 30) {
-                    $yins = $connection->prepare("
-                        INSERT INTO tbl_youth (id_youth, lname, fname, mi, age, sex)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            lname=VALUES(lname), fname=VALUES(fname), mi=VALUES(mi),
-                            age=VALUES(age), sex=VALUES(sex)
-                    ");
-                    $yins->execute([
-                        $new_id_resident, $p['lname'], $p['fname'], $p['mi'],
-                        $age_at_approval, $p['sex']
-                    ]);
-                }
-            }
+            // ── YOUTH REGISTRATION IS NOT AUTOMATIC ───────────────────────
+            // Approval no longer creates a tbl_youth row. A resident who is
+            // within the youth age range (see BMIS_YOUTH_MIN_AGE/MAX_AGE in
+            // security.php) is sent to resident_youth_profile.php on first
+            // login and must register in the Youth Portal themselves. They
+            // only appear in the SK youth records once that registration is
+            // saved.
 
             $del = $connection->prepare("DELETE FROM tbl_resident_pending WHERE id_pending = ?");
             $del->execute([$id_pending]);
@@ -466,7 +463,7 @@ header("refresh: 0");
     public function reject_pending_resident($id_pending, $admin_name, $reason = '') {
         $connection = $this->openConn();
         try {
-            $stmt = $connection->prepare("SELECT valid_id_file FROM tbl_resident_pending WHERE id_pending = ?");
+            $stmt = $connection->prepare("SELECT valid_id_file, profile_photo FROM tbl_resident_pending WHERE id_pending = ?");
             $stmt->execute([$id_pending]);
             $p = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -484,6 +481,8 @@ header("refresh: 0");
                     }
                 }
             }
+
+            if ($p && !empty($p['profile_photo'])) { bmis_delete_profile_photo($p['profile_photo']); }
 
             $upd = $connection->prepare("UPDATE tbl_resident_pending SET application_status = 'rejected', reject_reason = ?, reviewed_by = ? WHERE id_pending = ?");
             return $upd->execute([$reason, $admin_name, $id_pending]);
@@ -496,7 +495,7 @@ header("refresh: 0");
     public function delete_pending_resident($id_pending) {
         $connection = $this->openConn();
         try {
-            $stmt = $connection->prepare("SELECT valid_id_file FROM tbl_resident_pending WHERE id_pending = ?");
+            $stmt = $connection->prepare("SELECT valid_id_file, profile_photo FROM tbl_resident_pending WHERE id_pending = ?");
             $stmt->execute([$id_pending]);
             $p = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -514,6 +513,8 @@ header("refresh: 0");
                     }
                 }
             }
+
+            if ($p && !empty($p['profile_photo'])) { bmis_delete_profile_photo($p['profile_photo']); }
 
             $del = $connection->prepare("DELETE FROM tbl_resident_pending WHERE id_pending = ?");
             return $del->execute([$id_pending]);
@@ -588,6 +589,43 @@ header("refresh: 0");
         $rescount = $stmt->fetchColumn();
 
         return $rescount;
+    }
+
+    /**
+     * Resident changes / removes their OWN profile photo (id taken from the
+     * session, never from the request).
+     */
+    public function update_profile_photo() {
+        if (!isset($_POST['update_profile_photo']) && !isset($_POST['remove_profile_photo'])) return;
+
+        $userdata    = $this->get_userdata();
+        $id_resident = (int)($userdata['id_resident'] ?? 0);
+        if ($id_resident <= 0) return;
+
+        bmis_session_start();
+        $connection = $this->openConn();
+        $stmt = $connection->prepare("SELECT profile_photo FROM tbl_resident WHERE id_resident = ?");
+        $stmt->execute([$id_resident]);
+        $old = $stmt->fetchColumn();
+
+        if (isset($_POST['remove_profile_photo'])) {
+            $connection->prepare("UPDATE tbl_resident SET profile_photo = NULL WHERE id_resident = ?")->execute([$id_resident]);
+            bmis_delete_profile_photo($old ?: null);
+            $_SESSION['photo_flash'] = ['ok' => true, 'msg' => 'Profile photo removed.'];
+        } elseif (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] === UPLOAD_ERR_NO_FILE) {
+            $_SESSION['photo_flash'] = ['ok' => false, 'msg' => 'Please choose a photo first.'];
+        } else {
+            $ph = bmis_save_profile_photo($_FILES['profile_photo']);
+            if ($ph['ok']) {
+                $connection->prepare("UPDATE tbl_resident SET profile_photo = ? WHERE id_resident = ?")->execute([$ph['filename'], $id_resident]);
+                bmis_delete_profile_photo($old ?: null);
+                $_SESSION['photo_flash'] = ['ok' => true, 'msg' => 'Profile photo updated.'];
+            } else {
+                $_SESSION['photo_flash'] = ['ok' => false, 'msg' => $ph['msg']];
+            }
+        }
+        header('Location: resident_profile.php');
+        exit;
     }
 
     public function profile_update() {

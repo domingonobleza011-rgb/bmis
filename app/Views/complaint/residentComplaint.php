@@ -279,9 +279,9 @@
 
                 <!-- Contact & Address -->
                 <div class="col-md-6">
-                    <label class="form-label">Contact Number</label>
+                    <label class="form-label">Contact Number <span style="font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">(optional)</span></label>
                     <input type="text" name="contact_number" class="form-control" 
-                           placeholder="09123456789" 
+                           placeholder="09123456789 — leave blank if none" 
                            value="<?= htmlspecialchars($userdetails['contact'] ?? '') ?>">
                 </div>
                 <div class="col-md-6">

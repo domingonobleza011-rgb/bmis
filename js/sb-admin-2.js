@@ -10,18 +10,18 @@
     };
   });
 
-  // Close any open menu accordions when window is resized below 768px
+  // Close any open menu accordions when the window WIDTH shrinks below 768px.
+  // (Only on a real width change: mobile browsers fire "resize" while scrolling
+  // when the address bar hides/shows, and the old code also auto-opened the
+  // sidebar below 480px, which made the drawer pop open while scrolling.)
+  var lastWidth = $(window).width();
   $(window).resize(function() {
-    if ($(window).width() < 768) {
+    var w = $(window).width();
+    if (w === lastWidth) return;
+    lastWidth = w;
+    if (w < 768) {
       $('.sidebar .collapse').collapse('hide');
-    };
-    
-    // Toggle the side navigation when window is resized below 480px
-    if ($(window).width() < 480 && !$(".sidebar").hasClass("toggled")) {
-      $("body").addClass("sidebar-toggled");
-      $(".sidebar").addClass("toggled");
-      $('.sidebar .collapse').collapse('hide');
-    };
+    }
   });
 
   // Prevent the content wrapper from scrolling when the fixed side navigation hovered over

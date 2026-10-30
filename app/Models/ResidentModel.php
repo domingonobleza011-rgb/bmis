@@ -376,30 +376,13 @@ header("refresh: 0");
 
             $new_id_resident = $connection->lastInsertId();
 
-            // ── AUTO SK-YOUTH ENROLLMENT ──────────────────────────────────
-            // SK youth membership covers residents below 30. Compute age from
-            // their birthdate (never manually entered) and, if eligible, add
-            // them straight into the SK youth records — no separate
-            // application step required. civil_status/education/employment/
-            // skills are left blank for the resident to fill in later via
-            // their youth profile; no contact number is stored here since
-            // tbl_resident.contact already has it.
-            if (!empty($p['bdate'])) {
-                $age_at_approval = (new DateTime())->diff(new DateTime($p['bdate']))->y;
-                if ($age_at_approval < 30) {
-                    $yins = $connection->prepare("
-                        INSERT INTO tbl_youth (id_youth, lname, fname, mi, age, sex)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                            lname=VALUES(lname), fname=VALUES(fname), mi=VALUES(mi),
-                            age=VALUES(age), sex=VALUES(sex)
-                    ");
-                    $yins->execute([
-                        $new_id_resident, $p['lname'], $p['fname'], $p['mi'],
-                        $age_at_approval, $p['sex']
-                    ]);
-                }
-            }
+            // ── YOUTH REGISTRATION IS NOT AUTOMATIC ───────────────────────
+            // Approval no longer creates a tbl_youth row. A resident who is
+            // within the youth age range (see BMIS_YOUTH_MIN_AGE/MAX_AGE in
+            // security.php) is sent to resident_youth_profile.php on first
+            // login and must register in the Youth Portal themselves. They
+            // only appear in the SK youth records once that registration is
+            // saved.
 
             $del = $connection->prepare("DELETE FROM tbl_resident_pending WHERE id_pending = ?");
             $del->execute([$id_pending]);

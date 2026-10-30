@@ -77,25 +77,8 @@
     </div>
     <br>
     <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
+        <div class="col-12 col-xl-10 mx-auto">
             <?php include(ROOT_PATH . '/admn_table_totalhouse_search.php'); ?>
-        </div>
-        <div class="col-md-3"></div>
-    </div>
-</div>
-
-<!-- FAMILY MEMBERS VIEW MODAL -->
-<div class="modal fade" id="familyMembersModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-users mr-2"></i>Family Members — <span id="familyModalHouseholdName"></span></h5>
-                <button type="button" class="btn-close" onclick="closeFamilyModal()"></button>
-            </div>
-            <div class="modal-body" id="familyModalBody" style="min-height:120px;">
-                <div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-            </div>
         </div>
     </div>
 </div>
@@ -136,43 +119,6 @@ document.querySelectorAll('form.show-loader').forEach(function (form) {
     });
 });
 
-function openFamilyModal(idResident, name) {
-    document.getElementById('familyModalHouseholdName').textContent = name;
-    var body = document.getElementById('familyModalBody');
-    body.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-    var modalEl = document.getElementById('familyMembersModal');
-    modalEl.style.display = 'block';
-    modalEl.classList.add('show');
-    modalEl.removeAttribute('aria-hidden');
-    modalEl.setAttribute('aria-modal', 'true');
-    document.body.classList.add('modal-open');
-    if (!document.getElementById('familyModalBackdrop')) {
-        var backdrop = document.createElement('div');
-        backdrop.className = 'modal-backdrop fade show';
-        backdrop.id = 'familyModalBackdrop';
-        backdrop.onclick = closeFamilyModal;
-        document.body.appendChild(backdrop);
-    }
-    fetch('ajax_view_family_members.php?id_resident=' + encodeURIComponent(idResident))
-        .then(function(res) { return res.text(); })
-        .then(function(html) { body.innerHTML = html; })
-        .catch(function() {
-            body.innerHTML = '<div class="text-danger text-center py-3">Failed to load family members. Please try again.</div>';
-        });
-}
-function closeFamilyModal() {
-    var modalEl = document.getElementById('familyMembersModal');
-    modalEl.classList.remove('show');
-    modalEl.style.display = 'none';
-    modalEl.setAttribute('aria-hidden', 'true');
-    modalEl.removeAttribute('aria-modal');
-    document.body.classList.remove('modal-open');
-    var backdrop = document.getElementById('familyModalBackdrop');
-    if (backdrop) backdrop.remove();
-}
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeFamilyModal();
-});
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

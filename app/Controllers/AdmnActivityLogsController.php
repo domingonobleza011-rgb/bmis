@@ -11,6 +11,10 @@ $admin_roles = ['admin', 'Administrator', 'Admin', 'ADMIN', 'administrator'];
 $user_role   = $userdetails['role'] ?? '';
 $is_admin    = in_array($user_role, $admin_roles);
 
+// Staff ('user' role, except SK Chairperson) have the same access as admins.
+$is_staff = ($user_role === 'user') && (($userdetails['position'] ?? '') !== 'Sk Chairperson');
+if ($is_staff) { $is_admin = true; }
+
 if (!$is_admin) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');

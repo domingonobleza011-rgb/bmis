@@ -411,7 +411,8 @@
 
                     <!-- Hidden fields -->
                     <input name="id_resident" type="hidden" value="<?= $userdetails['id_resident'] ?>">
-                </div>
+                <?php $bmis_consent_id = 'consent_brgyid'; $bmis_consent_purpose = 'process this request'; $bmis_consent_third = false; include __DIR__ . '/partials/consent_checkbox.php'; ?>
+</div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -489,5 +490,6 @@ document.querySelectorAll('form.show-loader').forEach(form => {
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

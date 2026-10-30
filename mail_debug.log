@@ -1,0 +1,162 @@
+2026-09-23 20:15:32 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-09-23 20:15:35 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-23 20:15:37 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-23 20:15:39 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-23 20:15:39 bmis_notify_admins done
+
+2026-09-23 20:17:11 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-09-23 20:17:11 lookup result | email='domingonobleza011@gmail.com'
+2026-09-23 20:17:12 send_gmail_mail returned=true
+
+2026-09-23 20:17:12 bmis_notify_admins called | subject=New Request: Business Permit
+2026-09-23 20:17:14 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-23 20:17:17 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-23 20:17:19 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-23 20:17:19 bmis_notify_admins done
+
+2026-09-23 20:19:03 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-09-23 20:19:03 lookup result | email='domingonobleza011@gmail.com'
+2026-09-23 20:19:07 send_gmail_mail returned=true
+
+2026-09-23 20:19:07 bmis_notify_admins called | subject=New Request: Business Permit
+2026-09-23 20:19:09 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-23 20:19:11 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-23 20:19:13 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-23 20:19:13 bmis_notify_admins done
+
+2026-09-25 09:33:12 bmis_notify_document_ready called | id_resident='145' doc=Barangay ID
+2026-09-25 09:33:12 lookup result | email='domingonobleza011@gmail.com'
+2026-09-25 09:33:13 send_gmail_mail returned=true
+
+2026-09-25 09:33:13 bmis_notify_admins called | subject=New Request: Barangay ID
+2026-09-25 09:33:14 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-25 09:33:15 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-25 09:33:16 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-25 09:33:16 bmis_notify_admins done
+
+2026-09-30 03:04:19 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-09-30 03:04:21 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-30 03:04:22 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-30 03:04:24 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-30 03:04:24 bmis_notify_admins done
+
+2026-09-30 21:22:12 bmis_notify_document_ready called | id_resident='0' doc=Certificate of Residency
+2026-09-30 21:22:12 lookup result | email=false
+2026-09-30 21:22:12 SKIPPED - no email on file for id_resident=0
+
+2026-09-30 21:22:12 bmis_notify_admins called | subject=New Request: Certificate of Residency
+2026-09-30 21:22:14 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-09-30 21:22:16 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-09-30 21:22:17 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-09-30 21:22:17 bmis_notify_admins done
+
+2026-10-01 00:31:13 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-10-01 00:31:13 lookup result | email='domingonobleza011@gmail.com'
+2026-10-01 00:31:16 send_gmail_mail returned=true
+
+2026-10-01 00:31:16 bmis_notify_admins called | subject=New Request: Business Permit
+2026-10-01 00:31:17 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-01 00:31:18 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-01 00:31:21 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-01 00:31:21 bmis_notify_admins done
+
+2026-10-04 21:07:10 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-04 21:07:13 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-04 21:07:14 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-04 21:07:15 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-04 21:07:15 bmis_notify_admins done
+
+2026-10-05 00:15:34 bmis_notify_document_ready called | id_resident='0' doc=Certificate of Indigency
+2026-10-05 00:15:34 lookup result | email=false
+2026-10-05 00:15:34 SKIPPED - no email on file for id_resident=0
+
+2026-10-05 00:15:34 bmis_notify_admins called | subject=New Request: Certificate of Indigency
+2026-10-05 00:15:35 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-05 00:15:38 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-05 00:15:39 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-05 00:15:39 bmis_notify_admins done
+
+2026-10-05 06:52:41 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-05 06:52:42 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-05 06:52:44 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-05 06:52:45 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-05 06:52:45 bmis_notify_admins done
+
+2026-10-12 07:48:51 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-10-12 07:48:51 lookup result | email='domingonobleza011@gmail.com'
+2026-10-12 07:48:52 send_gmail_mail returned=true
+
+2026-10-12 07:48:52 bmis_notify_admins called | subject=New Request: Business Permit
+2026-10-12 07:48:54 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-12 07:48:55 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-12 07:48:56 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-12 07:48:56 bmis_notify_admins done
+
+2026-10-16 07:14:52 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-16 07:14:53 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-16 07:14:54 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-16 07:14:57 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-16 07:14:57 bmis_notify_admins done
+
+2026-10-16 07:18:56 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-16 07:18:57 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-16 07:18:59 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-16 07:19:00 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-16 07:19:00 bmis_notify_admins done
+
+2026-10-16 07:50:03 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-16 07:50:04 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-16 07:50:06 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-16 07:50:11 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-16 07:50:11 bmis_notify_admins done
+
+2026-10-17 08:21:31 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-17 08:21:33 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-17 08:21:35 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-17 08:21:36 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-17 08:21:36 bmis_notify_admins done
+
+2026-10-28 13:29:19 bmis_notify_admins called | subject=New Password Reset Request
+2026-10-28 13:29:21 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-28 13:29:24 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-28 13:29:26 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-28 13:29:26 bmis_notify_admins done
+
+2026-10-28 01:37:41 bmis_notify_admins called | subject=New Resident Registration Pending
+2026-10-28 01:37:42 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-28 01:37:44 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-28 01:37:48 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-28 01:37:48 bmis_notify_admins done
+
+2026-10-28 14:16:38 bmis_notify_admins called | subject=New Password Reset Request
+2026-10-28 14:16:39 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-28 14:16:40 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-28 14:16:42 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-28 14:16:42 bmis_notify_admins done
+
+2026-10-28 20:01:38 bmis_notify_admins called | subject=New Password Reset Request
+2026-10-28 20:01:41 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-28 20:01:43 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-28 20:01:45 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-28 20:01:45 bmis_notify_admins done
+
+2026-10-29 06:06:53 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-10-29 06:06:53 lookup result | email='domingonobleza011@gmail.com'
+2026-10-29 06:06:55 send_gmail_mail returned=true
+
+2026-10-29 06:06:55 bmis_notify_admins called | subject=New Request: Business Permit
+2026-10-29 06:06:57 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-29 06:06:58 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-29 06:07:00 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-29 06:07:00 bmis_notify_admins done
+
+2026-10-29 21:05:47 bmis_notify_document_ready called | id_resident='145' doc=Business Permit
+2026-10-29 21:05:47 lookup result | email='domingonobleza011@gmail.com'
+2026-10-29 21:05:48 send_gmail_mail returned=true
+
+2026-10-29 21:05:48 bmis_notify_admins called | subject=New Request: Business Permit
+2026-10-29 21:05:50 bmis_notify_admins -> sanpedroiriga@gmail.com returned=true
+2026-10-29 21:05:52 bmis_notify_admins -> dominge@gmail.com returned=true
+2026-10-29 21:05:55 bmis_notify_admins -> domingo@gmail.com returned=true
+2026-10-29 21:05:55 bmis_notify_admins done
+

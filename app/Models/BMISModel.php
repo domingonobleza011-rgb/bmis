@@ -190,8 +190,13 @@ public function openConn() {
  
             // 3. Get deleted_by from session if available
             $deleted_by = null;
-            if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['fname'], $_SESSION['lname'])) {
-                $deleted_by = $_SESSION['lname'] . ', ' . $_SESSION['fname'];
+            if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['userdata'])) {
+                $ud  = $_SESSION['userdata'];
+                $fn  = trim($ud['firstname'] ?? '');
+                $ln  = trim($ud['surname'] ?? '');
+                if ($fn !== '' || $ln !== '') {
+                    $deleted_by = trim($fn . ' ' . $ln);
+                }
             }
  
             // 4. Insert into archive
@@ -249,28 +254,6 @@ public function openConn() {
             error_log("log_activity error: " . $e->getMessage());
         }
     }
-    public function log_login_event(string $event, array $user = [], string $email = ''): void {
-        try {
-            $id_admin   = $user['id_admin'] ?? null;
-            $fname      = $user['fname']    ?? '';
-            $lname      = $user['lname']    ?? '';
-            $admin_name = trim("$fname $lname") ?: ($email ?: 'Unknown');
-            $role       = $user['role']     ?? '';
-            $email_col  = $user['email']    ?? $email;
-            $ip         = $_SERVER['REMOTE_ADDR']     ?? null;
-            $ua         = $_SERVER['HTTP_USER_AGENT'] ?? null;
- 
-            $con  = $this->openConn();
-            $stmt = $con->prepare("
-                INSERT INTO tbl_login_history
-                    (id_admin, admin_name, role, email, event, ip_address, user_agent)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$id_admin, $admin_name, $role, $email_col, $event, $ip, $ua]);
-        } catch (\Throwable $e) {
-            error_log("log_login_event error: " . $e->getMessage());
-        }
-    }
     public function get_activity_logs(array $filters = [], int $page = 1, int $per_page = 20): array {
         try {
             $con    = $this->openConn();
@@ -319,87 +302,6 @@ public function openConn() {
             return ['rows' => [], 'total' => 0];
         }
     }
-    public function get_login_history(array $filters = [], int $page = 1, int $per_page = 20): array {
-        try {
-            $con    = $this->openConn();
-            $where  = ['1=1'];
-            $params = [];
- 
-            if (!empty($filters['search'])) {
-                $where[]  = '(admin_name LIKE ? OR email LIKE ?)';
-                $s = '%' . $filters['search'] . '%';
-                $params = array_merge($params, [$s, $s]);
-            }
-            if (!empty($filters['event'])) {
-                $where[]  = 'event = ?';
-                $params[] = $filters['event'];
-            }
-            if (!empty($filters['date_from'])) {
-                $where[]  = 'DATE(created_at) >= ?';
-                $params[] = $filters['date_from'];
-            }
-            if (!empty($filters['date_to'])) {
-                $where[]  = 'DATE(created_at) <= ?';
-                $params[] = $filters['date_to'];
-            }
- 
-            $sql_where = implode(' AND ', $where);
- 
-            $count_stmt = $con->prepare("SELECT COUNT(*) FROM tbl_login_history WHERE $sql_where");
-            $count_stmt->execute($params);
-            $total = (int) $count_stmt->fetchColumn();
- 
-            $offset = ($page - 1) * $per_page;
-            $data_stmt = $con->prepare("
-                SELECT * FROM tbl_login_history
-                WHERE $sql_where
-                ORDER BY created_at DESC
-                LIMIT $per_page OFFSET $offset
-            ");
-            $data_stmt->execute($params);
-            $rows = $data_stmt->fetchAll();
- 
-            return ['rows' => $rows, 'total' => $total];
-        } catch (\Throwable $e) {
-            error_log("get_login_history error: " . $e->getMessage());
-            return ['rows' => [], 'total' => 0];
-        }
-    }
- public function delete_login_history($id_history) {
-        try {
-            // If nothing was passed or the array is empty, stop early
-            if (empty($id_history)) {
-                return false;
-            }
-
-            // Force it to be an array if a single ID is accidentally passed
-            if (!is_array($id_history)) {
-                $id_history = [$id_history];
-            }
-
-            $connection = $this->openConn();
-
-            // 1. Create a string of question marks matching the number of IDs: e.g., "?, ?, ?"
-            $placeholders = implode(',', array_fill(0, count($id_history), '?'));
-
-            // 2. Point to the correct column name (id_history) instead of (id)
-            $sql  = "DELETE FROM tbl_login_history WHERE id_history IN ($placeholders)";
-            
-            $stmt = $connection->prepare($sql);
-            
-            // 3. Execute by passing the array values directly
-            return $stmt->execute(array_values($id_history));
-
-        } catch (PDOException $e) {
-            // Friendly framework notification layout
-            if (function_exists('notif')) {
-                notif("Database Error: " . $e->getMessage(), 'error');
-            } else {
-                error_log("Database Error: " . $e->getMessage());
-            }
-            return false;
-        }
-    }
     /**
      * Delete log rows older than $days days (optional maintenance).
      */
@@ -407,7 +309,6 @@ public function openConn() {
         try {
             $con = $this->openConn();
             $con->prepare("DELETE FROM tbl_activity_log  WHERE created_at < NOW() - INTERVAL ? DAY")->execute([$days]);
-            $con->prepare("DELETE FROM tbl_login_history WHERE created_at < NOW() - INTERVAL ? DAY")->execute([$days]);
         } catch (\Throwable $e) {
             error_log("clear_old_logs error: " . $e->getMessage());
         }
@@ -437,7 +338,6 @@ public function openConn() {
             if(in_array(strtolower($user['role']), ['admin', 'administrator'])) {
                 bmis_reset_login_attempts($connection, $identity);
                 $this->set_userdata($user);
-                $this->log_login_event('login', $user);
                 header('Location: admn_dashboard.php');
                 exit();
             }
@@ -452,7 +352,6 @@ public function openConn() {
             if($user['role'] == 'user') {
                 bmis_reset_login_attempts($connection, $identity);
                 $this->set_userdata($user);
-                $this->log_login_event('login', $user);
 
                 $position = $user['position'];
 
@@ -500,7 +399,6 @@ public function openConn() {
 
         // Invalid credentials
         bmis_record_failed_login($connection, $identity);
-        $this->log_login_event('failed', [], $identity);
         $_SESSION['login_error'] = 'Invalid credentials. Please check your Email/Phone and Password.';
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit();
@@ -1288,7 +1186,7 @@ public function approveResidentVerification($id_resident, $id_upload, $admin_nam
                         ],
                         'webpush' => [
                             'notification' => [
-                                'icon' => '/assets/logo.jpg',
+                                'icon' => '/icons/pwa/icon-192x192.png',
                             ],
                             'fcm_options' => [
                                 'link' => 'resident_homepage.php',
@@ -2125,7 +2023,13 @@ public function get_single_youth($id_youth) {
 }
 public function create_youth() {
     if(isset($_POST['create_youth'])) {
-        $id_youth       = $_POST['id_youth'];  // ← already in your modal form! (= id_resident)
+        // Always the logged-in resident's own id — never a client-supplied one.
+        $_ud = $this->get_userdata();
+        $id_youth       = $_ud['id_resident'] ?? null;
+        if (empty($id_youth)) { return; }
+        // Registration happens once. After that the profile is view-only
+        // (only the photo can change, via update_youth_photo()).
+        if ($this->is_youth_registered($id_youth)) { return; }
         $lname          = $_POST['lname'];
         $fname          = $_POST['fname'];
         $mi             = $_POST['mi'];
@@ -2204,6 +2108,59 @@ public function create_youth() {
         header("refresh: 0");
     }
 }
+
+    // Returns true when the logged-in resident already has a registered youth
+    // profile (civil_status, a required registration field, is filled in).
+    // After registration the profile is view-only: only the photo may change.
+    public function is_youth_registered($id_youth) {
+        $connection = $this->openConn();
+        $stmt = $connection->prepare("SELECT civil_status FROM tbl_youth WHERE id_youth = ? LIMIT 1");
+        $stmt->execute([$id_youth]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ($row && !empty($row['civil_status']));
+    }
+
+    // Photo-only edit for an already-registered youth profile. Always acts on
+    // the logged-in resident's own row (never a client-supplied id), and never
+    // touches any other column.
+    public function update_youth_photo() {
+        if (!isset($_POST['update_youth_photo'])) { return; }
+
+        $userdata   = $this->get_userdata();
+        $id_youth   = $userdata['id_resident'] ?? null;
+        if (empty($id_youth) || !$this->is_youth_registered($id_youth)) {
+            header('Location: resident_youth_profile.php');
+            exit();
+        }
+
+        $result = 'invalid';
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $validated = bmis_validate_image_upload($_FILES['photo'], /* allow_pdf */ false);
+            if ($validated['ok']) {
+                $connection = $this->openConn();
+                $upload_dir = 'uploads/youth_photos/';
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0755, true);
+                }
+                $old_stmt = $connection->prepare("SELECT photo FROM tbl_youth WHERE id_youth = ?");
+                $old_stmt->execute([$id_youth]);
+                $old_photo = $old_stmt->fetchColumn();
+
+                $new_filename = 'youth_' . $id_youth . '_' . time() . '_' . $validated['safe_name'];
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $upload_dir . $new_filename)) {
+                    $upd = $connection->prepare("UPDATE tbl_youth SET photo = ? WHERE id_youth = ?");
+                    $upd->execute([$new_filename, $id_youth]);
+                    if ($old_photo && is_file($upload_dir . $old_photo)) {
+                        unlink($upload_dir . $old_photo);
+                    }
+                    $result = 'updated';
+                }
+            }
+        }
+        header('Location: resident_youth_profile.php?photo=' . $result);
+        exit();
+    }
+
     public function view_youth(){
         $connection = $this->openConn();
         $stmt = $connection->prepare("SELECT * from tbl_youth");

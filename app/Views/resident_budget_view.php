@@ -103,19 +103,22 @@ body { background:#f0f2f5; color:#1c1e21; }
     .budget-post-image img { max-height:110px; object-fit:cover; }
     .budget-post-image-tap-hint { display:block; }
 }
+.budget-view-desc { padding:4px 16px 16px; }
+.btn-view-desc { width:100%; border-radius:10px; font-weight:600; }
 </style>
 </head>
 <body>
 
 <?php include(ROOT_PATH . '/resident_navbar.php'); ?>
 
-<div class="container-md px-3 px-sm-4 py-3 py-md-4">
-<div class="budget-container">
-
-<div class="page-header">
-    <h2><i class="fas fa-wallet me-2"></i>Budget Transparency</h2>
+<div class="resident-hero">
+    <i class="bi bi-wallet2"></i>
+    <h1>Budget Transparency</h1>
     <p>Open and transparent barangay budget for residents of San Pedro</p>
 </div>
+
+<div class="container-md px-3 px-sm-4 py-3 py-md-4">
+<div class="budget-container">
 
 <div class="filter-card">
     <div class="row g-2 align-items-center">
@@ -145,7 +148,7 @@ body { background:#f0f2f5; color:#1c1e21; }
     <h5>No Budget Information</h5>
     <p class="mb-0">No budget information is available for the selected year.</p>
 </div>
-<?php else: foreach ($view as $row):
+<?php else: foreach (array_values($view) as $vi => $row):
     $statusClass = match ($row['status']) {
         'Approved' => 'status-approved',
         'Spent'    => 'status-spent',
@@ -172,11 +175,6 @@ body { background:#f0f2f5; color:#1c1e21; }
 
     <div class="post-content">
         <div class="post-category"><?= htmlspecialchars($row['category']) ?></div>
-        <?php if (!empty($row['description'])): ?>
-            <p><?= nl2br(htmlspecialchars($row['description'])) ?></p>
-        <?php else: ?>
-            <p class="text-muted">No description provided.</p>
-        <?php endif; ?>
     </div>
 
     <?php if (!empty($row['image']) && file_exists('uploads/' . $row['image'])): ?>
@@ -186,58 +184,34 @@ body { background:#f0f2f5; color:#1c1e21; }
         <div class="budget-post-image-tap-hint"><i class="fas fa-expand me-1"></i>Tap photo to view full size</div>
     <?php endif; ?>
 
-    <div class="budget-details">
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-calendar-alt"></i></div>
-            <div class="detail-label">Fiscal Year</div>
-            <div class="detail-value"><?= htmlspecialchars($row['fiscal_year']) ?></div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-tag"></i></div>
-            <div class="detail-label">Category</div>
-            <div class="detail-value"><?= htmlspecialchars($row['category']) ?></div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-align-left"></i></div>
-            <div class="detail-label">Description</div>
-            <div class="detail-value"><?= nl2br(htmlspecialchars($row['description'] ?? '—')) ?></div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-money-bill-wave"></i></div>
-            <div class="detail-label">Amount</div>
-            <div class="detail-value amount-value">₱ <?= number_format($row['amount'], 2) ?></div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-circle-check"></i></div>
-            <div class="detail-label">Status</div>
-            <div class="detail-value"><span class="status-badge <?= $statusClass ?>"><?= htmlspecialchars($row['status']) ?></span></div>
-        </div>
-        <?php if (!empty($row['date_added'])): ?>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-clock"></i></div>
-            <div class="detail-label">Date Added</div>
-            <div class="detail-value"><?= date('M d, Y', strtotime($row['date_added'])) ?></div>
-        </div>
-        <?php endif; ?>
-        <div class="detail-row">
-            <div class="detail-icon"><i class="fas fa-image"></i></div>
-            <div class="detail-label">Photo</div>
-            <div class="detail-value">
-                <?php if ($imageIndex >= 0): ?>
-                    <span class="text-success"><i class="fas fa-check-circle me-1"></i>Available</span>
-                <?php else: ?>
-                    <span class="text-muted">No photo</span>
-                <?php endif; ?>
-            </div>
-        </div>
+    <div class="budget-view-desc">
+        <button type="button" class="btn btn-primary btn-view-desc" onclick="openBudgetDetails(<?= $vi ?>)">
+            <i class="fas fa-align-left me-1"></i>View Description
+        </button>
     </div>
-
-
 
 </div>
 <?php endforeach; endif; ?>
 
 </div>
+</div>
+
+<!-- DESCRIPTION / DETAILS MODAL -->
+<div class="modal fade" id="budgetDetailsModal" tabindex="-1" aria-labelledby="budgetDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="budgetDetailsTitle">Budget Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="budget-details" id="budgetDetailsBody"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- IMAGE VIEWER -->
@@ -257,6 +231,47 @@ body { background:#f0f2f5; color:#1c1e21; }
         </div>
     </div>
 </div>
+
+<script>
+const budgetRows = <?= json_encode(array_map(function ($r) {
+    return [
+        'fiscal_year' => (string)($r['fiscal_year'] ?? ''),
+        'category'    => (string)($r['category'] ?? ''),
+        'description' => (string)($r['description'] ?? ''),
+        'amount'      => number_format((float)($r['amount'] ?? 0), 2),
+        'status'      => (string)($r['status'] ?? ''),
+        'date_added'  => !empty($r['date_added']) ? date('M d, Y', strtotime($r['date_added'])) : '',
+    ];
+}, array_values($view ?? [])), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+function openBudgetDetails(i) {
+    const r = budgetRows[i];
+    if (!r) return;
+    const rows = [
+        ['fa-calendar-alt', 'Fiscal Year', r.fiscal_year],
+        ['fa-tag', 'Category', r.category],
+        ['fa-align-left', 'Description', r.description || 'No description provided.'],
+        ['fa-money-bill-wave', 'Amount', '\u20B1 ' + r.amount],
+        ['fa-circle-check', 'Status', r.status]
+    ];
+    if (r.date_added) rows.push(['fa-clock', 'Date Added', r.date_added]);
+
+    const body = document.getElementById('budgetDetailsBody');
+    body.innerHTML = '';
+    rows.forEach(function (x) {
+        const row = document.createElement('div'); row.className = 'detail-row';
+        const ic = document.createElement('div'); ic.className = 'detail-icon';
+        const icon = document.createElement('i'); icon.className = 'fas ' + x[0]; ic.appendChild(icon);
+        const lb = document.createElement('div'); lb.className = 'detail-label'; lb.textContent = x[1];
+        const vl = document.createElement('div'); vl.className = 'detail-value'; vl.textContent = x[2];
+        vl.style.whiteSpace = 'pre-line';
+        row.appendChild(ic); row.appendChild(lb); row.appendChild(vl);
+        body.appendChild(row);
+    });
+    document.getElementById('budgetDetailsTitle').textContent = r.category;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('budgetDetailsModal')).show();
+}
+</script>
 
 <script>
 const budgetImages = <?= json_encode($all_images, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
@@ -303,5 +318,6 @@ document.getElementById('budgetViewerModal').addEventListener('hidden.bs.modal',
     document.getElementById('viewerImageTitle').textContent = '';
 });
 </script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

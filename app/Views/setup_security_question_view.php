@@ -534,5 +534,6 @@
     });
 </script>
 
+<?php $bmis_legal_links = true; include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

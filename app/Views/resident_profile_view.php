@@ -443,6 +443,42 @@
     </div>
     <?php endif; ?>
 
+    <!-- PROFILE PHOTO -->
+    <?php
+        $ppUrl  = bmis_profile_photo_url($resident['profile_photo'] ?? '');
+        $ppInit = htmlspecialchars(strtoupper(mb_substr((string)($resident['fname'] ?? '?'), 0, 1)));
+    ?>
+    <div class="form-card mb-3">
+        <div class="section-title"><i class="bi bi-person-circle"></i> Profile Photo</div>
+        <hr class="section-divider">
+        <?php if (!empty($photo_flash['msg'])): ?>
+            <div class="alert alert-<?= !empty($photo_flash['ok']) ? 'success' : 'danger' ?> py-2" role="alert">
+                <?= htmlspecialchars($photo_flash['msg']) ?>
+            </div>
+        <?php endif; ?>
+        <form method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-3 flex-wrap" id="photoForm">
+            <div id="photoPreview" style="width:110px;height:110px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#0f2d5a,#2b5ea7);color:#fff;font-weight:700;font-size:2.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <?php if ($ppUrl): ?>
+                    <img src="<?= htmlspecialchars($ppUrl) ?>" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;">
+                <?php else: ?><?= $ppInit ?><?php endif; ?>
+            </div>
+            <div class="flex-grow-1" style="min-width:220px;">
+                <input type="file" name="profile_photo" id="photoInput" class="form-control mb-2"
+                       accept=".jpg,.jpeg,.png,.gif,.webp,image/*">
+                <small class="text-muted d-block mb-2">JPG, PNG, GIF or WebP &bull; Max 5MB</small>
+                <button type="submit" name="update_profile_photo" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload me-1"></i> Save Photo
+                </button>
+                <?php if ($ppUrl): ?>
+                <button type="submit" name="remove_profile_photo" value="1" class="btn btn-outline-danger btn-sm"
+                        formnovalidate onclick="return confirm('Remove your profile photo?');">
+                    <i class="bi bi-trash me-1"></i> Remove
+                </button>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
+
     <!-- PROFILE CARD -->
     <div class="form-card">
         <form method="post" class="d-flex flex-column flex-grow-1">
@@ -658,7 +694,8 @@
                                        placeholder="e.g. Student, Teacher, etc.">
                             </div>
                         </div>
-                    </div>
+                    <?php $bmis_consent_id = 'consent_family'; $bmis_consent_purpose = 'record these household / family member details'; $bmis_consent_third = true; include __DIR__ . '/partials/consent_checkbox.php'; ?>
+</div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
                             Cancel
@@ -769,5 +806,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php unset($_SESSION['swal']); endif; ?>
+<script>
+(function () {
+    var inp = document.getElementById('photoInput'), box = document.getElementById('photoPreview');
+    if (!inp || !box) return;
+    inp.addEventListener('change', function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        if (f.size > 5 * 1024 * 1024) { alert('Photo is too large (max 5MB).'); inp.value = ''; return; }
+        var r = new FileReader();
+        r.onload = function (e) {
+            box.innerHTML = '<img src="' + e.target.result + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+        };
+        r.readAsDataURL(f);
+    });
+})();
+</script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

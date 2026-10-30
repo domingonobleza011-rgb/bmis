@@ -449,6 +449,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="css/bg-blur.css?v=20261026b">
+    <link rel="stylesheet" href="css/skeleton-public.css?v=20261026c">
 </head>
 <body>
 <div class="container px-0 px-sm-3">
@@ -526,6 +528,9 @@
                                    placeholder="e.g. 09xxxxxxxxx or email@domain.com" 
                                    required autofocus>
                         </div>
+                    </div>
+                    <div class="mb-3 d-flex justify-content-center">
+                        <div class="cf-turnstile" data-sitekey="0x4AAAAAAEHzfWAU9-zKulev"></div>
                     </div>
                     <button type="submit" name="find_account" class="btn btn-primary w-100">
                         <i class="fas fa-search me-2"></i>Find My Account
@@ -759,5 +764,9 @@ document.querySelectorAll('form.show-loader').forEach(form => {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="js/skeleton-pages.js?v=20261026c"></script>
+<script src="js/skeleton-public.js?v=20261026c"></script>
+<?php $bmis_legal_links = true; include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

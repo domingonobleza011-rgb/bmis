@@ -40,7 +40,7 @@
                             <i class="fas fa-comment-alt"></i> Message
                         </button>
                         <?php else: ?>
-<button type="button" class="btn btn-info btn-sm text-white" style="width:110px;font-size:17px;border-radius:30px;margin-bottom:2px;" data-toggle="modal" data-target="#messageModal<?= $view['id_resident'];?>">
+<button type="button" class="btn btn-info btn-sm text-white" style="width:110px;font-size:17px;border-radius:30px;margin-bottom:2px;" data-toggle="modal" data-target="#messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>" data-bs-toggle="modal" data-bs-target="#messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>">
                             <i class="fas fa-comment-alt"></i> Message
                         </button>
                         <?php endif; ?>
@@ -61,12 +61,12 @@
                 <td> <?= $view['purpose'];?> </td>
 
                 <!-- Message Modal -->
-                <div class="modal fade" id="messageModal<?= $view['id_resident'];?>" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal fade" id="messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content" style="border-radius:20px;overflow:hidden;">
                             <div class="modal-header bg-info text-white">
                                 <h5 class="modal-title"><i class="fas fa-paper-plane mr-2"></i> Send Message</h5>
-                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal">&times;</button>
                             </div>
                             <form action="send_resident_msg.php" method="POST">
                                 <div class="modal-body text-left">
@@ -82,7 +82,7 @@
                                     <input type="hidden" name="redirect_to" value="admn_certofgoodmoral.php">
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:30px;">Cancel</button>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius:30px;">Cancel</button>
                                     <button type="submit" name="send_msg" class="btn btn-info text-white" style="border-radius:30px;width:120px;">Send</button>
                                 </div>
                             </form>
@@ -131,7 +131,7 @@
                                     <i class="fas fa-comment-alt"></i> Message
                                 </button>
                                 <?php else: ?>
-<button type="button" class="btn btn-info btn-sm text-white" style="width:110px;font-size:17px;border-radius:30px;margin-bottom:2px;" data-toggle="modal" data-target="#messageModal<?= $view['id_resident'];?>">
+<button type="button" class="btn btn-info btn-sm text-white" style="width:110px;font-size:17px;border-radius:30px;margin-bottom:2px;" data-toggle="modal" data-target="#messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>" data-bs-toggle="modal" data-bs-target="#messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>">
                                     <i class="fas fa-comment-alt"></i> Message
                                 </button>
                                 <?php endif; ?>
@@ -152,12 +152,12 @@
                         <td> <?= $view['purpose'];?> </td>
 
                         <!-- Message Modal -->
-                        <div class="modal fade" id="messageModal<?= $view['id_resident'];?>" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal fade" id="messageModal<?= $view['id_resident'];?>_<?= $view['id_goodmoral'];?>" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered" role="document">
                                 <div class="modal-content" style="border-radius:20px;overflow:hidden;">
                                     <div class="modal-header bg-info text-white">
                                         <h5 class="modal-title"><i class="fas fa-paper-plane mr-2"></i> Send Message</h5>
-                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                        <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal">&times;</button>
                                     </div>
                                     <form action="send_resident_msg.php" method="POST">
                                         <div class="modal-body text-left">
@@ -173,7 +173,7 @@
                                             <input type="hidden" name="redirect_to" value="admn_certofgoodmoral.php">
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:30px;">Cancel</button>
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius:30px;">Cancel</button>
                                             <button type="submit" name="send_msg" class="btn btn-info text-white" style="border-radius:30px;width:120px;">Send</button>
                                         </div>
                                     </form>

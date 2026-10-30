@@ -313,9 +313,9 @@
 
                 <!-- Contact & Address -->
                 <div class="col-md-6">
-                    <label class="form-label">Contact Number</label>
+                    <label class="form-label">Contact Number <span style="font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">(optional)</span></label>
                     <input type="text" name="contact_number" class="form-control" 
-                           placeholder="09123456789" 
+                           placeholder="09123456789 — leave blank if none" 
                            value="<?= htmlspecialchars($userdetails['contact'] ?? '') ?>">
                 </div>
                 <div class="col-md-6">
@@ -401,6 +401,10 @@
                         </div>
                         <canvas id="photoCanvas" class="d-none"></canvas>
                     </div>
+                </div>
+
+                <div class="col-12">
+<?php $bmis_consent_id = 'consent_complaint'; $bmis_consent_purpose = 'receive, review and act on my complaint'; $bmis_consent_third = false; include __DIR__ . '/partials/consent_checkbox.php'; ?>
                 </div>
 
                 <!-- Submit -->
@@ -605,5 +609,6 @@ document.querySelectorAll('form.show-loader').forEach(form => {
     });
 });
 </script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

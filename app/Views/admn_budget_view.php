@@ -126,6 +126,34 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ===== Budget table: mobile only (desktop untouched) ===== */
+.bmob-only { display: none; }
+@media (max-width: 767.98px) {
+    .bmob-only { display: table-cell; width: 52px; text-align: center; }
+    th.bmob-only { padding: 0 !important; }
+    .bmob-hide { display: none !important; }
+    .table-responsive > .table { min-width: 0; }
+    .table-responsive td, .table-responsive th { vertical-align: middle; font-size: 0.88rem; }
+    .bmob-toggle {
+        width: 36px; height: 36px; padding: 0; border-radius: 50%;
+        border: 1px solid #dde3ee; background: #fff; color: #4a5568; cursor: pointer;
+    }
+    .bmob-toggle[aria-expanded="true"] { background: #e8eef7; color: #0f2d5a; }
+    .bmob-menu { display: none; }
+    .bmob-menu.bmob-open {
+        display: block; position: fixed; z-index: 100000; min-width: 160px;
+        padding: 6px; background: #fff; border: 1px solid #e8ecf0; border-radius: 12px;
+        box-shadow: 0 8px 28px rgba(15,45,90,.22);
+    }
+    .bmob-item {
+        display: flex; align-items: center; gap: 10px; width: 100%;
+        padding: 10px 12px; border: 0; background: transparent; text-align: left;
+        font-size: 0.95rem; border-radius: 8px; cursor: pointer;
+    }
+    .bmob-item:hover, .bmob-item:active { background: #f1f4f9; }
+    .bmob-item i { width: 18px; text-align: center; }
+}
 </style>
 
 <div class="container-fluid">
@@ -183,14 +211,15 @@
                 <table class="table table-bordered table-hover" width="100%">
                     <thead>
                         <tr>
+                            <th class="bmob-only" aria-label="Menu"></th>
                             <th>Photo</th>
-                            <th>Fiscal Year</th>
-                            <th>Category</th>
+                            <th class="bmob-hide">Fiscal Year</th>
+                            <th class="bmob-hide">Category</th>
                             <th>Description</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date Added</th>
-                            <th>Actions</th>
+                            <th class="bmob-hide">Amount</th>
+                            <th class="bmob-hide">Status</th>
+                            <th class="bmob-hide">Date Added</th>
+                            <th class="bmob-hide">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,6 +232,28 @@
                     <?php else: ?>
                         <?php foreach ($view as $row): ?>
                             <tr>
+                                <!-- MOBILE ONLY: 3-dots menu (before photo) -->
+                                <td class="bmob-only text-center">
+                                    <button type="button" class="bmob-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="bmob-menu">
+                                        <button type="button" class="bmob-item"
+                                                onclick='viewBudget(<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
+                                            <i class="fas fa-eye text-primary"></i> View
+                                        </button>
+                                        <button type="button" class="bmob-item"
+                                                onclick='editBudget(<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
+                                            <i class="fas fa-edit text-success"></i> Edit
+                                        </button>
+                                        <button type="button" class="bmob-item text-danger"
+                                                data-id="<?= htmlspecialchars($row['id_budget'], ENT_QUOTES) ?>"
+                                                data-preview="<?= htmlspecialchars($row['category'] . ' — ₱' . number_format($row['amount'], 2) . ' (' . $row['fiscal_year'] . ')', ENT_QUOTES) ?>"
+                                                onclick="openDeleteBudgetModal(this.dataset.id, this.dataset.preview)">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
                                 <!-- PHOTO -->
                                 <td class="text-center">
                                     <?php if (!empty($row['image']) && file_exists('uploads/' . $row['image'])): ?>
@@ -217,11 +268,11 @@
                                         <span class="text-muted small">No photo</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= htmlspecialchars($row['fiscal_year']) ?></td>
-                                <td><?= htmlspecialchars($row['category']) ?></td>
+                                <td class="bmob-hide"><?= htmlspecialchars($row['fiscal_year']) ?></td>
+                                <td class="bmob-hide"><?= htmlspecialchars($row['category']) ?></td>
                                 <td><?= htmlspecialchars($row['description'] ?? '') ?></td>
-                                <td class="text-end">₱ <?= number_format($row['amount'], 2) ?></td>
-                                <td>
+                                <td class="text-end bmob-hide">₱ <?= number_format($row['amount'], 2) ?></td>
+                                <td class="bmob-hide">
                                     <?php
                                     $badge = match ($row['status']) {
                                         'Approved' => 'success',
@@ -234,8 +285,8 @@
                                         <?= htmlspecialchars($row['status']) ?>
                                     </span>
                                 </td>
-                                <td><?= date('M d, Y', strtotime($row['date_added'])) ?></td>
-                                <td>
+                                <td class="bmob-hide"><?= date('M d, Y', strtotime($row['date_added'])) ?></td>
+                                <td class="bmob-hide">
                                     <button type="button"
                                             class="btn btn-sm btn-outline-primary"
                                             onclick='editBudget(<?= json_encode(
@@ -301,6 +352,35 @@
                         <span id="currentImageIndex">1</span> of <span id="totalImages">1</span>
                     </span>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW BUDGET MODAL -->
+<div class="modal fade" id="viewBudgetModal" tabindex="-1" aria-labelledby="viewBudgetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewBudgetModalLabel"><i class="fas fa-eye me-2"></i>Budget Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="vb_photo_wrap" class="text-center mb-3" style="display:none;">
+                    <img id="vb_photo" src="" alt="Budget photo" style="max-width:100%;max-height:260px;object-fit:contain;border-radius:10px;">
+                </div>
+                <dl class="row mb-0">
+                    <dt class="col-5">Fiscal Year</dt><dd class="col-7" id="vb_year"></dd>
+                    <dt class="col-5">Category</dt><dd class="col-7" id="vb_category"></dd>
+                    <dt class="col-5">Description</dt><dd class="col-7" id="vb_desc" style="white-space:pre-wrap;word-break:break-word;"></dd>
+                    <dt class="col-5">Amount</dt><dd class="col-7" id="vb_amount"></dd>
+                    <dt class="col-5">Status</dt><dd class="col-7" id="vb_status"></dd>
+                    <dt class="col-5">Date Added</dt><dd class="col-7" id="vb_date"></dd>
+                    <dt class="col-5" id="vb_by_label">Added By</dt><dd class="col-7" id="vb_by"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -700,6 +780,68 @@ function closeDeleteBudgetModal() {
 document.getElementById('deleteBudgetModal').addEventListener('click', function (e) {
     if (e.target === this) closeDeleteBudgetModal();
 });
+/* =========================================================
+   MOBILE 3-DOTS MENU + VIEW MODAL
+========================================================= */
+function viewBudget(row) {
+    var closeAll = document.querySelector('.bmob-menu.bmob-open');
+    if (closeAll) closeAll.classList.remove('bmob-open');
+    document.getElementById('vb_year').textContent = row.fiscal_year || '';
+    document.getElementById('vb_category').textContent = row.category || '';
+    document.getElementById('vb_desc').textContent = row.description || '—';
+    document.getElementById('vb_amount').textContent = '₱ ' + Number(row.amount || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('vb_status').textContent = row.status || '';
+    var d = row.date_added ? new Date(String(row.date_added).replace(' ', 'T')) : null;
+    document.getElementById('vb_date').textContent = (d && !isNaN(d)) ? d.toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: '2-digit'}) : (row.date_added || '');
+    var by = row.added_by || row.addedby || '';
+    document.getElementById('vb_by').textContent = by || '—';
+    var wrap = document.getElementById('vb_photo_wrap');
+    var img = document.getElementById('vb_photo');
+    if (row.image && String(row.image).trim() !== '') {
+        img.src = 'uploads/' + row.image;
+        wrap.style.display = 'block';
+    } else {
+        img.src = '';
+        wrap.style.display = 'none';
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewBudgetModal')).show();
+}
+
+(function () {
+    var open = null;
+    function closeMenu() {
+        if (!open) return;
+        open.menu.classList.remove('bmob-open');
+        open.menu.style.top = open.menu.style.left = '';
+        open.btn.setAttribute('aria-expanded', 'false');
+        open = null;
+    }
+    document.querySelectorAll('.bmob-toggle').forEach(function (btn) {
+        var menu = btn.parentElement.querySelector('.bmob-menu');
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (open && open.menu === menu) { closeMenu(); return; }
+            closeMenu();
+            menu.classList.add('bmob-open');
+            btn.setAttribute('aria-expanded', 'true');
+            open = { btn: btn, menu: menu };
+            var r = btn.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight, pad = 8;
+            var left = Math.min(Math.max(pad, r.left), window.innerWidth - w - pad);
+            var top = r.bottom + 4;
+            if (top + h > window.innerHeight - pad) top = Math.max(pad, r.top - h - 4);
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        });
+        menu.addEventListener('click', function (e) {
+            if (e.target.closest('.bmob-item')) setTimeout(closeMenu, 0);
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (open && !open.menu.contains(e.target)) closeMenu();
+    });
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+})();
 </script>
 
 <?php include(ROOT_PATH . '/dashboard_sidebar_end.php'); ?>

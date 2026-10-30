@@ -343,4 +343,5 @@ document.querySelectorAll('form.show-loader').forEach(form => {
 </script>
 <?php unset($_SESSION['swal']); endif; ?>
 
+<?php $mobile_keep_cols = ['actions','fullname','full name']; include(ROOT_PATH . '/admn_mobile_cols.php'); ?>
 <?php include(ROOT_PATH . '/dashboard_sidebar_end.php'); ?>

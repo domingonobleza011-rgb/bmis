@@ -1,7 +1,7 @@
 
 <?php include(ROOT_PATH . '/dashboard_sidebar_start_sk.php'); ?>
 <style>
-:root { --sk:#1a6b3a;--gold:#c9943a;--sk-pale:#e8f5ed;--gold-pale:#fdf3e3; }
+:root { --sk:#1a4480;--gold:#c9943a;--sk-pale:#e8eef8;--gold-pale:#fdf3e3; }
 .page-header { background:linear-gradient(135deg,#1a6b3a,#2dab5f);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 24px rgba(26,107,58,.2); }
 .page-header .hdr-icon { width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0; }
 .page-header h2 { margin:0;font-size:1.5rem;font-weight:700; }
@@ -77,7 +77,7 @@
     <?php else: ?>
     <div class="panel">
         <div class="prog-table-wrap">
-        <table class="prog-table">
+        <table class="prog-table sk-rowmenu sk-prog-table">
             <thead>
                 <tr>
                     <th>Type</th>
@@ -238,7 +238,6 @@
     </div>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('editProgModal').addEventListener('show.bs.modal', function(e) {
     const b = e.relatedTarget;

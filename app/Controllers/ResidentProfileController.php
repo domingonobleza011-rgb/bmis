@@ -9,7 +9,10 @@ $userdetails = $residentbmis->get_userdata();
 // the URL so one resident can never view or edit another's profile.
 $id_resident = $userdetails['id_resident'] ?? 0;
 $resident = $residentbmis->get_single_resident($id_resident);
+$residentbmis->update_profile_photo();
 $residentbmis->profile_update();
+$photo_flash = $_SESSION['photo_flash'] ?? null;
+unset($_SESSION['photo_flash']);
 $is_verified = $residentbmis->isResidentVerified($userdetails['id_resident']);
 // ── FAMILY MEMBERS (household roster) ──────────────────────────────────────
 // Only meaningful for residents registered as Household Head. All reads/

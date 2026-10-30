@@ -22,46 +22,12 @@ if (isset($_POST['search_voters'])) {
 
     $paged = ['rows' => $rows, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'last_page' => (int)ceil($total / $perPage)];
 ?>
-<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
-    <thead class="alert-info"><tr><th>#</th><<th>Fullname</th><th>Sex</th><th>Status</th><th>Address</th><th>Birth date</th></tr></thead>
-    <tbody>
-        <?php foreach ($rows as $row): ?>
-        <tr>
-            <td><?= $i++ ?></td>
-            <td><?= htmlspecialchars($row['lname']) ?>, <?= htmlspecialchars($row['fname']) ?> <?= htmlspecialchars($row['mi']) ?></td>
-          
-            <td><?= htmlspecialchars($row['sex']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
-            <td><?= htmlspecialchars($row['houseno']) ?>, <?= htmlspecialchars($row['street']) ?> <?= htmlspecialchars($row['brgy']) ?> <?= htmlspecialchars($row['municipal']) ?></td>
-            <td><?= htmlspecialchars($row['bdate']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if (empty($rows)): ?><tr><td colspan="12" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
-    </tbody>
-</table>
-<?php render_pagination($paged); ?>
+<?php $res_empty_text = 'No registered voters found.'; require ROOT_PATH . '/app/Views/resident_cards_partial.php'; ?>
 
 <?php } else {
     $rows  = $view['rows']  ?? [];
     $paged = $view;
 ?>
-<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
-     <thead class="alert-info"><tr><th>#</th><th>Fullname</th><th>Sex</th><th>Status</th><th>Address</th><th>Birth date</th></tr></thead>
-    <tbody>
-        <?php foreach ($rows as $row): ?>
-        <tr>
-             <td><?= $i++ ?></td>
-<td><?= htmlspecialchars($row['lname']) ?>, <?= htmlspecialchars($row['fname']) ?> <?= htmlspecialchars($row['mi']) ?></td>
-          
-            <td><?= htmlspecialchars($row['sex']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
-            <td><?= htmlspecialchars($row['houseno']) ?>, <?= htmlspecialchars($row['street']) ?> <?= htmlspecialchars($row['brgy']) ?> <?= htmlspecialchars($row['municipal']) ?></td>
-            <td><?= htmlspecialchars($row['bdate']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if (empty($rows)): ?><tr><td colspan="12" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
-    </tbody>
-</table>
-<?php render_pagination($paged); ?>
+<?php $res_empty_text = 'No registered voters found.'; require ROOT_PATH . '/app/Views/resident_cards_partial.php'; ?>
 
 <?php } $conn = null; ?>

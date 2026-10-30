@@ -31,11 +31,11 @@ $resident_nav_items = [
         'mobile' => 'News',
     ],
     [
-        'match'  => ['resident_budget.php'],
-        'href'   => 'resident_budget.php',
-        'icon'   => 'bi-wallet2',
-        'label'  => 'Budget',
-        'mobile' => 'Budget',
+        'match'  => ['resident_youth_profile.php'],
+        'href'   => 'resident_youth_profile.php',
+        'icon'   => 'bi-people',
+        'label'  => 'Youth',
+        'mobile' => 'Youth',
     ],
     [
         'match'  => ['resident_profile.php'],
@@ -54,6 +54,8 @@ $resident_nav_items = [
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/pwa/favicon-32x32.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
+
+<?php include __DIR__ . '/resident_theme.php'; ?>
 
 <style>
 /* ===== SHARED RESIDENT NAVBAR STYLES ===== */
@@ -271,12 +273,19 @@ $resident_nav_items = [
                     <i class="bi <?= htmlspecialchars($item['icon']) ?>"></i> <?= htmlspecialchars($item['label']) ?>
                 </a>
             <?php endforeach; ?>
+            <?php rtm_render_controls($rtm_fonts); ?>
             <a href="#" class="btn-nav-logout" data-bs-toggle="modal" data-bs-target="#residentLogoutModal">
                 <i class="bi bi-box-arrow-right"></i> Logout
             </a>
         </div>
     </div>
 </nav>
+
+<!-- ===== MOBILE TOP BAR (theme + text settings; hidden on desktop) ===== -->
+<div class="resident-mobile-top d-md-none">
+    <a class="rtm-brand" href="resident_homepage.php"><img src="icons/logo.png" alt=""> Barangay San Pedro</a>
+    <?php rtm_render_controls($rtm_fonts); ?>
+</div>
 
 <!-- ===== MOBILE BOTTOM NAV (Hidden on Desktop) ===== -->
 <div class="mobile-bottom-nav d-md-none">
@@ -312,57 +321,105 @@ $resident_nav_items = [
     </div>
 </div>
 
-<!-- Page Navigation Loading Overlay — same look as the sign-in loader on
-     login.php, reused here for logout AND for every resident nav link click
-     (desktop top nav + mobile bottom nav), so switching between resident
-     pages shows the same loading screen as signing in. -->
+<!-- Page loading screen — a skeleton screen (shimmering placeholders) that covers
+     only the content area, between the top nav and the mobile bottom nav. Used for
+     logout, every resident nav link click, and the pages' own #page-loader calls. -->
 <style>
-    #page-nav-loader {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 45, 90, 0.72);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        z-index: 99999;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 1.25rem;
+    #page-nav-loader, #page-loader {
+        --sk-bg: #f0f2f5; --sk-card: #ffffff; --sk-line: #e4e6ea;
+        --sk-base: #e4e8ef; --sk-shine: #f5f7fb;
+        position: fixed !important; inset: auto !important;
+        top: var(--sk-top, 64px) !important; left: 0 !important; right: 0 !important;
+        bottom: var(--sk-bottom, 0px) !important;
+        display: none; background: var(--sk-bg) !important;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        z-index: 1040 !important; overflow: hidden; padding: 0 !important; gap: 0 !important;
     }
-    #page-nav-loader.show { display: flex; }
-    #page-nav-loader .spinner {
-        width: 56px;
-        height: 56px;
-        border: 4px solid rgba(255,255,255,0.25);
-        border-top-color: #c9943a;
-        border-radius: 50%;
-        animation: page-nav-spin 0.85s linear infinite;
+    html[data-theme="dark"] #page-nav-loader, html[data-theme="dark"] #page-loader {
+        --sk-bg: #0b0b0b; --sk-card: #000000; --sk-line: rgba(255,255,255,.12);
+        --sk-base: #1c1c1c; --sk-shine: #2b2b2b;
     }
-    #page-nav-loader .loader-text {
-        color: #fff;
-        font-weight: 600;
-        font-size: 1.05rem;
-        letter-spacing: 0.3px;
+    html[data-theme="light"] #page-nav-loader, html[data-theme="light"] #page-loader {
+        --sk-bg: #f8f9fc; --sk-line: #d9dfe9;
     }
-    @keyframes page-nav-spin { to { transform: rotate(360deg); } }
+    #page-nav-loader.show, #page-loader.show { display: block !important; }
+    #page-nav-loader > :not(.sk-wrap), #page-loader > :not(.sk-wrap) { display: none !important; }
+
+    .sk-wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; height: 100%; overflow: hidden; }
+    /* !important: the resident theme blanks every background inside the page */
+    .sk { display: block; border-radius: 8px; background-color: var(--sk-base) !important;
+          background-image: linear-gradient(90deg, transparent 0, var(--sk-shine) 50%, transparent 100%) !important;
+          background-size: 200px 100%; background-repeat: no-repeat; background-position: -200px 0;
+          animation: sk-shimmer 1.3s ease-in-out infinite; }
+    @keyframes sk-shimmer { to { background-position: calc(100% + 200px) 0; } }
+    .sk-title { height: 28px; width: 240px; max-width: 70%; margin: 0 auto 10px; }
+    .sk-sub   { height: 12px; width: 170px; max-width: 50%; margin: 0 auto 24px; }
+    .sk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .sk-card  { background: var(--sk-card) !important; border: 1px solid var(--sk-line) !important; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .sk-cards .sk-card { margin-bottom: 0; }
+    .sk-cards .sk:nth-child(1) { height: 36px; width: 36px; border-radius: 50%; margin-bottom: 12px; }
+    .sk-cards .sk:nth-child(2) { height: 12px; width: 70%; margin-bottom: 8px; }
+    .sk-cards .sk:nth-child(3) { height: 10px; width: 45%; }
+    .sk-post-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .sk-post-head .sk.sk-av { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; }
+    .sk-post-head .sk-lines { flex: 1; }
+    .sk-post-head .sk-lines .sk { height: 11px; }
+    .sk-post-head .sk-lines .sk:first-child { width: 40%; margin-bottom: 8px; }
+    .sk-post-head .sk-lines .sk:last-child { width: 24%; }
+    .sk-line { height: 11px; margin-bottom: 9px; }
+    .sk-line.w80 { width: 80%; } .sk-line.w60 { width: 60%; }
+    @media (max-width: 767.98px) { .sk-cards { grid-template-columns: 1fr; } .sk-wrap { padding: 1rem .75rem; } }
 </style>
 <div id="page-nav-loader">
     <div class="spinner"></div>
     <div class="loader-text" id="page-nav-loader-text">Loading...</div>
 </div>
+<link rel="stylesheet" href="css/skeleton-pages.css?v=20261026c">
+<script src="js/skeleton-pages.js?v=20261026c"></script>
 <script>
-    function showPageNavLoader(msg) {
+    function placeSkeleton() {
+        // between the desktop top nav and the mobile bottom nav
+        var top = 0, bottom = 0;
+        var dn = document.querySelector('.resident-desktop-nav');
+        if (dn && dn.offsetParent !== null) top = Math.max(0, dn.getBoundingClientRect().bottom);
+        var mb = document.querySelector('.mobile-bottom-nav');
+        if (mb && mb.offsetParent !== null) bottom = Math.max(0, window.innerHeight - mb.getBoundingClientRect().top);
+        document.documentElement.style.setProperty('--sk-top', top + 'px');
+        document.documentElement.style.setProperty('--sk-bottom', bottom + 'px');
+    }
+    function initSkeletons() {
+        // #page-loader is declared by each page (after this include), so wait for the DOM.
+        ['page-nav-loader', 'page-loader'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el || el.__skReady) return;
+            el.__skReady = true;
+            SkeletonPages.render(el, location.href, 'resident');
+            new MutationObserver(function () {
+                if (!el.classList.contains('show')) return;
+                if (!el.__skNav) SkeletonPages.render(el, location.href, 'resident');
+                placeSkeleton();
+            }).observe(el, { attributes: true, attributeFilter: ['class'] });
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSkeletons);
+    else initSkeletons();
+
+    function showPageNavLoader(msg, href) {
         var loader = document.getElementById('page-nav-loader');
         var text = document.getElementById('page-nav-loader-text');
         if (text) text.textContent = msg || 'Loading...';
-        if (loader) loader.classList.add('show');
+        if (loader) {
+            // skeleton of the page being opened (falls back to the current page)
+            loader.__skNav = true;
+            SkeletonPages.render(loader, href || location.href, 'resident');
+            loader.classList.add('show');
+        }
     }
 
     // Show the loading overlay the moment logout is confirmed, then let
     // the link's normal navigation to logout.php proceed underneath it.
     document.getElementById('residentConfirmLogoutBtn').addEventListener('click', function () {
-        showPageNavLoader('Logging you out...');
+        showPageNavLoader('Logging you out...', 'logout.php');
     });
 
     // Show the same loading screen whenever a resident nav link (desktop
@@ -379,7 +436,7 @@ $resident_nav_items = [
             if (link.hasAttribute('data-bs-toggle')) return;
             if (link.target && link.target !== '' && link.target !== '_self') return;
 
-            showPageNavLoader('Loading...');
+            showPageNavLoader('Loading...', link.href);
         });
     });
 
@@ -388,7 +445,7 @@ $resident_nav_items = [
     window.addEventListener('pageshow', function (e) {
         if (e.persisted) {
             var loader = document.getElementById('page-nav-loader');
-            if (loader) loader.classList.remove('show');
+            if (loader) { loader.classList.remove('show'); loader.__skNav = false; }
         }
     });
 </script>

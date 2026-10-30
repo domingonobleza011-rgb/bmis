@@ -166,5 +166,6 @@
             }
         });
     </script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

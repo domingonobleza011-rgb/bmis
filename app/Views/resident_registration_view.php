@@ -313,18 +313,16 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <link rel="stylesheet" href="css/bg-blur.css?v=20261026b">
+    <link rel="stylesheet" href="css/skeleton-public.css?v=20261026c">
 </head>
 <body>
-<div class="hero-registration">
-    <div class="hero-content">
-        <h1>Resident Registration</h1>
-        <p>Create your account to access barangay services</p>
-        <span class="hero-badge"><i class="bi bi-building me-1"></i> Barangay San Pedro, Iriga City</span>
-    </div>
-</div>
-
-<div class="container">
+<div class="container" style="padding-top: 2rem;">
     <div class="form-card">
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-1" style="font-size: 1.7rem; color: #1c1e21; letter-spacing: -0.5px;">Resident Registration</h1>
+            <p class="mb-0" style="color: #65676b; font-size: 0.92rem;">Create your account to access barangay services</p>
+        </div>
         <form method="post" enctype="multipart/form-data" class="was-validated show-loader" data-loader-msg="Submitting registration..." id="registrationForm">
             <div class="section-title">
                 <i class="bi bi-person-fill"></i> Personal Information
@@ -411,12 +409,14 @@
             <hr class="section-divider">
             <div class="row g-3">
                 <div class="col-md-6 col-12">
-                    <label class="form-label">House No.</label>
-                    <input type="text" class="form-control" name="houseno" placeholder="Enter House No." required>
+                    <label class="form-label">House No. <span class="text-muted fw-normal">(optional)</span></label>
+                    <input type="text" class="form-control" name="houseno" id="housenoInput"
+                           placeholder="Enter House No. — leave blank if unknown"
+                           inputmode="numeric" pattern="[0-9]*" title="Numbers only" maxlength="10">
                 </div>
                 <div class="col-md-6 col-12">
-                    <label class="form-label">Street</label>
-                    <input type="text" class="form-control" name="street" placeholder="Enter Street" required>
+                    <label class="form-label">Street <span class="text-muted fw-normal">(optional)</span></label>
+                    <input type="text" class="form-control" name="street" placeholder="Enter Street — leave blank if unknown">
                 </div>
             </div>
             <div class="row g-3 mt-1">
@@ -514,6 +514,25 @@
             </div>
 
             <div class="section-title mt-4">
+                <i class="bi bi-person-circle"></i> Profile Photo <small class="text-muted" style="font-weight:400;">(optional)</small>
+            </div>
+            <hr class="section-divider">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div id="profilePhotoPreview" style="width:96px;height:96px;border-radius:50%;overflow:hidden;background:#e9eef7;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #cfd9ea;">
+                            <i class="bi bi-person-fill" style="font-size:2.6rem;color:#8aa0c4;"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="profile_photo_input" name="profile_photo" class="form-control"
+                                   accept=".jpg,.jpeg,.png,.gif,.webp,image/*">
+                            <small class="text-muted">JPG, PNG, GIF or WebP &bull; Max 5MB &bull; Shown on your profile and to barangay staff.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title mt-4">
                 <i class="bi bi-card-image"></i> Valid ID Upload
             </div>
             <hr class="section-divider">
@@ -567,17 +586,22 @@
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="termsCheck" required>
                         <label class="form-check-label" for="termsCheck">
-                            I agree to the 
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" style="text-decoration:none; color:#1b74e4; font-weight:600;">
-                                Terms and Conditions
-                            </a>
+                            I have read and agree to the
+                            <a href="/terms" target="_blank" rel="noopener" style="text-decoration:none; color:#1b74e4; font-weight:600;">Terms and Conditions</a>
+                            and the
+                            <a href="/privacy" target="_blank" rel="noopener" style="text-decoration:none; color:#1b74e4; font-weight:600;">Privacy Notice</a>
                         </label>
                         <div class="invalid-feedback">You must agree before submitting.</div>
                     </div>
                 </div>
             </div>
-
             <hr class="section-divider mt-3">
+            <?php if (!empty($turnstile_error)): ?>
+                <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($turnstile_error) ?></div>
+            <?php endif; ?>
+            <div class="d-flex justify-content-end mb-3">
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAAEHzfWAU9-zKulev"></div>
+            </div>
             <div class="d-flex justify-content-end align-items-center gap-3 flex-wrap">
                 <input type="hidden" name="role" value="resident">
                 <input type="hidden" name="add_resident" value="1">
@@ -611,7 +635,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="document.getElementById('termsCheck').checked = true;">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
                     I Understand
                 </button>
             </div>
@@ -624,6 +648,7 @@
     <div class="loader-text" id="loader-msg">Please wait...</div>
 </div>
 
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -651,6 +676,20 @@
         }
     });
 });
+
+// ── House No. must be numbers only (it's optional — blank is fine) ───
+(function () {
+    var housenoEl = document.getElementById('housenoInput');
+    if (!housenoEl) return;
+
+    housenoEl.addEventListener('input', function () {
+        var start = this.selectionStart;
+        var cleaned = this.value.replace(/[^0-9]/g, '');
+        this.value = cleaned;
+        var pos = Math.min(start, this.value.length);
+        this.setSelectionRange(pos, pos);
+    });
+})();
 
 // ── Email (login_identity) must contain @ ────────────────────────────
 var loginIdentity = document.getElementById('login_identity');
@@ -949,7 +988,7 @@ document.getElementById('password-field').addEventListener('input', function () 
         { select: 'barangaySelect', code: 'barangayCode' },
     ];
     function readDraft() {
-        try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
+        try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
     }
     function saveDraft() {
         var draft = { fields: {}, selects: {}, address: {}, terms: false };
@@ -967,10 +1006,10 @@ document.getElementById('password-field').addEventListener('input', function () 
             if (selEl) draft.address[item.select] = { value: selEl.value, code: codeEl ? codeEl.value : '' };
         });
         var terms = document.getElementById('termsCheck');
-        draft.terms = terms ? terms.checked : false;
-        try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+        draft.terms = false; // consent is never stored; the person must tick it again
+        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
     }
-    function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+    function clearDraft() { try { sessionStorage.removeItem(DRAFT_KEY); try { localStorage.removeItem(DRAFT_KEY); } catch (e2) {} } catch (e) {} }
     function restoreDraft() {
         var draft = readDraft();
         if (!draft) return;
@@ -983,7 +1022,7 @@ document.getElementById('password-field').addEventListener('input', function () 
             if (el && draft.selects[name]) el.value = draft.selects[name];
         });
         var terms = document.getElementById('termsCheck');
-        if (terms) terms.checked = !!draft.terms;
+        /* consent box is intentionally NOT restored */
         // Uppercase restored names
         ['lname', 'fname', 'mi'].forEach(function (id) {
             var el = document.getElementById(id);
@@ -1008,5 +1047,25 @@ document.getElementById('password-field').addEventListener('input', function () 
     restoreDraft();
 })();
 </script>
+<script src="js/skeleton-pages.js?v=20261026c"></script>
+<script src="js/skeleton-public.js?v=20261026c"></script>
+<script>
+(function () {
+    var inp = document.getElementById('profile_photo_input');
+    var box = document.getElementById('profilePhotoPreview');
+    if (!inp || !box) return;
+    inp.addEventListener('change', function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        if (f.size > 5 * 1024 * 1024) { alert('Photo is too large (max 5MB).'); inp.value = ''; return; }
+        var r = new FileReader();
+        r.onload = function (e) {
+            box.innerHTML = '<img src="' + e.target.result + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+        };
+        r.readAsDataURL(f);
+    });
+})();
+</script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

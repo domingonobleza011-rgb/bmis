@@ -796,6 +796,67 @@ hr {
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
+   
+    <div class="row mt-3">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card border-left-primary shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Residents</div>
+                            <div class="h5 mb-0 font-weight-bold text-dark"><?= $kpi_residents ?></div>
+                            <br>
+                            <a href="admn_table_totalres.php">View All</a>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-people-fill" style="font-size:2rem;"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card border-left-success shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Certificate Requests</div>
+                            <div class="h5 mb-0 font-weight-bold text-dark"><?= $kpi_certs ?></div>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-file-earmark-text-fill" style="font-size:2rem;"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card border-left-danger shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Complaints</div>
+                            <div class="h5 mb-0 font-weight-bold text-dark" data-live="cmp_total"><?= $complaint_total ?></div>
+                            <br>
+                            <a href="admn_complaints.php">View All</a>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-megaphone-fill" style="font-size:2rem;"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card border-left-warning shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Announcements</div>
+                            <div class="h5 mb-0 font-weight-bold text-dark"><?= $kpi_announcements ?></div>
+                            <br>
+                            <a href="admn_announcement_crud.php">View All</a>
+                        </div>
+                        <div class="col-auto"><i class="bi bi-bell-fill" style="font-size:2rem;"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Page Heading -->
     <div class="row mt-3 equal-height-cards">
 
@@ -910,102 +971,8 @@ hr {
             </div>
         </div>
     </div>
-    <!-- ══ END CERTIFICATES ISSUED ══ -->
-    <hr>
-    <br>
+  
 
-    
-    <!-- ══════════════════════════════════════ -->
-    <!--  RESIDENT COMPLAINTS SECTION          -->
-    <!-- ══════════════════════════════════════ -->
-    <br>
-    <hr>
-    <br>
-
-    <div class="row">
-        <div class="col-12">
-            <h4>Resident Complaints</h4>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-
-        <!-- Total Complaints -->
-        <div class="col-md-4 mb-3">
-            <div class="card border-left-danger shadow h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Total Complaints
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-dark" data-live="cmp_total"><?= $complaint_total ?></div>
-                            <br>
-                            <a href="admn_complaints.php">View All</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-megaphone-fill" style="font-size:2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Complaints -->
-        <div class="col-md-4 mb-3">
-            <div class="card border-left-warning shadow h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Pending Complaints
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-dark" data-live="cmp_pending"><?= $complaint_pending ?></div>
-                            <br>
-                            <a href="admn_complaints.php?status=pending" class="text-warning fw-semibold">Review Now</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-clock-history" style="font-size:2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Resolved Complaints -->
-        <div class="col-md-4 mb-3">
-            <div class="card border-left-success shadow h-100">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Resolved Complaints
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-dark" data-live="cmp_resolved"><?= $complaint_resolved ?></div>
-                            <br>
-                            <a href="admn_complaints.php?status=resolved" class="text-success">View Resolved</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-check-circle-fill" style="font-size:2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-    <!-- ══ END COMPLAINTS ══ -->
-
-    <!-- ══════════════════════════════════════ -->
-    <!--  CERTIFICATES ISSUED SECTION          -->
-    <!-- ══════════════════════════════════════ -->
-    <br>
-    <hr>
-    <br>
-
-    
-
-<!-- /.container-fluid -->
 </div>
 <!-- End of Main Content -->
 

@@ -183,14 +183,3 @@
     <?php endif; ?>
 
 </div>
-<?php endforeach;
-$html = ob_get_clean();
-
-echo json_encode([
-    'html'            => $html,
-    'count_all'       => $count_all,
-    'count_pending'   => $count_pending,
-    'count_inprogress'=> $count_inprogress,
-    'count_resolved'  => $count_resolved,
-    'total_shown'     => count($complaints),
-]);

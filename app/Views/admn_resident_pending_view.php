@@ -91,6 +91,44 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ===== MOBILE ONLY (desktop untouched) ===== */
+.pd-toggle, .pd-menu, .pd-mb { display:none; }
+@media (max-width: 767.98px) {
+    /* Awaiting Approval / Rejected side by side */
+    .nav-tabs { flex-wrap:nowrap; }
+    .nav-tabs .nav-item { flex:1 1 50%; min-width:0; }
+    .nav-tabs .nav-link { width:100%; padding:8px 4px; font-size:.78rem; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .nav-tabs .nav-link i { display:none; }
+
+    /* tables: only Applicant Name + Actions */
+    .pd-table .pd-hide { display:none !important; }
+    .pd-table th, .pd-table td { padding:10px 12px; }
+    .pd-table th.pd-actions-col, .pd-table td.pd-actions-col { width:60px; text-align:center; }
+    .pd-dt { display:none; }
+    .pd-mb { display:inline; }
+    /* higher specificity so Bootstrap's .d-flex (loaded later, !important) can't win */
+    .pd-table .pd-desk, .pd-table td .pd-desk.d-flex { display:none !important; }
+    .pd-toggle {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:36px; height:36px; padding:0; border-radius:50%;
+        border:1px solid #dde3ee; background:#fff; color:#4a5568; cursor:pointer;
+    }
+    .pd-toggle[aria-expanded="true"] { background:#e8eef7; color:var(--navy); }
+    .pd-menu.pd-open {
+        display:block; position:fixed; z-index:9990; min-width:170px; padding:6px;
+        background:#fff; border:1px solid #e8ecf0; border-radius:12px; text-align:left;
+        box-shadow:0 8px 28px rgba(15,45,90,.22);
+    }
+    .pd-item {
+        display:flex; align-items:center; gap:10px; width:100%;
+        padding:10px 12px; border:0; background:transparent; text-align:left;
+        font-size:.92rem; color:#222; border-radius:8px; cursor:pointer;
+    }
+    .pd-item:hover, .pd-item:active { background:#f1f4f9; }
+    .pd-item i { width:18px; text-align:center; }
+    .pd-item.pd-danger { color:#c0392b; }
+}
 </style>
 
 <?php include(ROOT_PATH . '/dashboard_sidebar_start.php'); ?>
@@ -132,15 +170,15 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
             <div class="card card-clean">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 text-center align-middle">
+                        <table class="table table-hover mb-0 text-center align-middle pd-table">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Applicant Name</th>
-                                    <th>Contact</th>
-                                    <th>Address</th>
-                                    <th>Valid ID</th>
-                                    <th>Date Submitted</th>
-                                    <th>Action</th>
+                                    <th class="pd-hide">Contact</th>
+                                    <th class="pd-hide">Address</th>
+                                    <th class="pd-hide">Valid ID</th>
+                                    <th class="pd-hide">Date Submitted</th>
+                                    <th class="pd-actions-col">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -148,15 +186,16 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
                                 <?php foreach ($pending_list as $p):
                                     $fullname = htmlspecialchars($p['fname'] . ' ' . $p['mi'] . ' ' . $p['lname']);
                                     $address  = htmlspecialchars(trim($p['houseno'] . ' ' . $p['street'] . ', ' . $p['brgy'] . ', ' . $p['municipal']));
+                                    $row_json = htmlspecialchars(json_encode(array_diff_key($p, ['password' => 1]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES);
                                 ?>
                                 <tr>
                                     <td class="fw-bold text-start"><?= $fullname ?></td>
-                                    <td>
+                                    <td class="pd-hide">
                                         <small><?= htmlspecialchars($p['email'] ?: $p['phone_number'] ?: '—') ?></small><br>
                                         <small class="text-muted"><?= htmlspecialchars($p['contact'] ?: '') ?></small>
                                     </td>
-                                    <td class="text-start"><small><?= $address ?></small></td>
-                                    <td>
+                                    <td class="text-start pd-hide"><small><?= $address ?></small></td>
+                                    <td class="pd-hide">
                                         <?php if (!empty($p['valid_id_file'])): ?>
                                         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3"
                                             onclick="openValidIdModal('uploads/valid_ids/<?= htmlspecialchars($p['valid_id_file']) ?>', '<?= $fullname ?>')">
@@ -166,9 +205,9 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
                                             <span class="text-muted small">No file</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><small><?= date('M d, Y g:i A', strtotime($p['date_submitted'])) ?></small></td>
-                                    <td>
-                                        <div class="d-flex gap-2 justify-content-center">
+                                    <td class="pd-hide"><small><?= date('M d, Y g:i A', strtotime($p['date_submitted'])) ?></small></td>
+                                    <td class="pd-actions-col">
+                                        <div class="d-flex gap-2 justify-content-center pd-desk">
                                             <button type="button" class="btn btn-success btn-sm rounded-pill px-3 fw-bold"
                                                 onclick="openApproveModal(<?= (int)$p['id_pending'] ?>, '<?= $fullname ?>')">
                                                 <i class="bi bi-check-circle-fill me-1"></i> Approve
@@ -176,6 +215,19 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
                                             <button type="button" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold"
                                                 onclick="openRejectModal(<?= (int)$p['id_pending'] ?>, '<?= $fullname ?>')">
                                                 <i class="bi bi-x-circle-fill me-1"></i> Reject
+                                            </button>
+                                        </div>
+                                        <!-- MOBILE ONLY: 3-dots menu -->
+                                        <button type="button" class="pd-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                        <div class="pd-menu">
+                                            <button type="button" class="pd-item" data-row="<?= $row_json ?>" data-kind="pending" onclick="openPendingView(this)">
+                                                <i class="bi bi-eye text-primary"></i> View
+                                            </button>
+                                            <button type="button" class="pd-item" onclick="openApproveModal(<?= (int)$p['id_pending'] ?>, '<?= $fullname ?>')">
+                                                <i class="bi bi-check-circle-fill text-success"></i> Approve
+                                            </button>
+                                            <button type="button" class="pd-item pd-danger" onclick="openRejectModal(<?= (int)$p['id_pending'] ?>, '<?= $fullname ?>')">
+                                                <i class="bi bi-x-circle-fill"></i> Reject
                                             </button>
                                         </div>
                                     </td>
@@ -196,29 +248,41 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
             <div class="card card-clean">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 text-center align-middle">
+                        <table class="table table-hover mb-0 text-center align-middle pd-table">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Applicant Name</th>
-                                    <th>Contact</th>
-                                    <th>Reason</th>
-                                    <th>Reviewed By</th>
-                                    <th>Delete</th>
+                                    <th class="pd-hide">Contact</th>
+                                    <th class="pd-hide">Reason</th>
+                                    <th class="pd-hide">Reviewed By</th>
+                                    <th class="pd-actions-col"><span class="pd-dt">Delete</span><span class="pd-mb">Action</span></th>
                                 </tr>
                             </thead>
                             <tbody>
                             <?php if (!empty($rejected_list)): ?>
-                                <?php foreach ($rejected_list as $p): ?>
+                                <?php foreach ($rejected_list as $p):
+                                    $rj_json = htmlspecialchars(json_encode(array_diff_key($p, ['password' => 1]), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES);
+                                ?>
                                 <tr>
                                     <td class="fw-bold text-start"><?= htmlspecialchars($p['fname'] . ' ' . $p['lname']) ?></td>
-                                    <td><small><?= htmlspecialchars($p['email'] ?: $p['phone_number'] ?: '—') ?></small></td>
-                                    <td class="text-start"><small><?= htmlspecialchars($p['reject_reason'] ?: '—') ?></small></td>
-                                    <td><small><?= htmlspecialchars($p['reviewed_by'] ?: '—') ?></small></td>
-                                    <td>
-                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3"
+                                    <td class="pd-hide"><small><?= htmlspecialchars($p['email'] ?: $p['phone_number'] ?: '—') ?></small></td>
+                                    <td class="text-start pd-hide"><small><?= htmlspecialchars($p['reject_reason'] ?: '—') ?></small></td>
+                                    <td class="pd-hide"><small><?= htmlspecialchars($p['reviewed_by'] ?: '—') ?></small></td>
+                                    <td class="pd-actions-col">
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 pd-desk"
                                             onclick="openDeleteModal(<?= (int)$p['id_pending'] ?>, '<?= htmlspecialchars($p['fname'] . ' ' . $p['lname']) ?>')">
                                             <i class="bi bi-trash-fill me-1"></i> Delete
                                         </button>
+                                        <!-- MOBILE ONLY: 3-dots menu -->
+                                        <button type="button" class="pd-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                        <div class="pd-menu">
+                                            <button type="button" class="pd-item" data-row="<?= $rj_json ?>" data-kind="rejected" onclick="openPendingView(this)">
+                                                <i class="bi bi-eye text-primary"></i> View
+                                            </button>
+                                            <button type="button" class="pd-item pd-danger" onclick="openDeleteModal(<?= (int)$p['id_pending'] ?>, '<?= htmlspecialchars($p['fname'] . ' ' . $p['lname']) ?>')">
+                                                <i class="bi bi-trash-fill"></i> Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -293,6 +357,28 @@ body { font-family: 'DM Sans', -apple-system, sans-serif !important; background:
 </div>
 
 <!-- Valid ID Viewer Modal -->
+<!-- Applicant details modal (used by the mobile 3-dots menu) -->
+<div class="modal fade" id="pendingViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:14px; overflow:hidden;">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-vcard me-2"></i><span id="pv_title">Applicant Details</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-0" style="font-size:.9rem;" id="pv_list"></dl>
+                <div class="mt-3">
+                    <div class="fw-bold mb-2" style="font-size:.9rem;">Valid ID Submitted</div>
+                    <div id="pv_id_wrap" class="text-center"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="validIdModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -429,6 +515,97 @@ document.addEventListener('keydown', function (e) {
         closeDeleteModal();
     }
 });
+
+/* ===== Mobile 3-dots menu + applicant details modal ===== */
+function pvEsc(v) {
+    var d = document.createElement('div');
+    d.textContent = (v === null || v === undefined || v === '') ? '—' : String(v);
+    return d.innerHTML;
+}
+function openPendingView(btn) {
+    var r = {};
+    try { r = JSON.parse(btn.dataset.row); } catch (e) { return; }
+    var name = [r.fname, r.mi, r.lname].filter(Boolean).join(' ');
+    document.getElementById('pv_title').textContent = name || 'Applicant Details';
+    var address = [r.houseno, r.street, r.brgy, r.municipal, r.province].filter(Boolean).join(', ');
+    var rows = [
+        ['Full Name', name],
+        ['Email', r.email],
+        ['Phone Number', r.phone_number],
+        ['Contact', r.contact],
+        ['Sex', r.sex],
+        ['Civil Status', r.status],
+        ['Birth Date', r.bdate],
+        ['Birth Place', r.bplace],
+        ['Nationality', r.nationality],
+        ['Family Role', r.family_role],
+        ['Voter', r.voter],
+        ['PWD', r.pwd],
+        ['Address', address],
+        ['Date Submitted', r.date_submitted]
+    ];
+    if (btn.dataset.kind === 'rejected') {
+        rows.push(['Reject Reason', r.reject_reason]);
+        rows.push(['Reviewed By', r.reviewed_by]);
+    }
+    document.getElementById('pv_list').innerHTML = rows.map(function (x) {
+        return '<dt class="col-5">' + x[0] + '</dt><dd class="col-7" style="word-break:break-word;">' + pvEsc(x[1]) + '</dd>';
+    }).join('');
+
+    var wrap = document.getElementById('pv_id_wrap');
+    if (r.valid_id_file) {
+        var url = 'uploads/valid_ids/' + encodeURIComponent(r.valid_id_file);
+        var link = '<div class="mt-2"><a href="' + url + '" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-box-arrow-up-right me-1"></i>Open full size</a></div>';
+        if (/\.pdf$/i.test(r.valid_id_file)) {
+            wrap.innerHTML = '<iframe src="' + url + '" style="width:100%;height:60vh;border:0;"></iframe>' + link;
+        } else {
+            wrap.innerHTML = '<img src="' + url + '" alt="Valid ID" class="img-fluid rounded" style="max-height:60vh;border:1px solid #dde3ee;">' + link;
+        }
+    } else {
+        wrap.innerHTML = '<span class="text-muted small">No file submitted</span>';
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('pendingViewModal')).show();
+}
+document.getElementById('pendingViewModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('pv_id_wrap').innerHTML = '';
+});
+
+(function () {
+    var open = null;
+    function closeMenu() {
+        if (!open) return;
+        open.menu.classList.remove('pd-open');
+        open.menu.style.top = open.menu.style.left = '';
+        open.btn.setAttribute('aria-expanded', 'false');
+        open = null;
+    }
+    document.querySelectorAll('.pd-toggle').forEach(function (btn) {
+        var menu = btn.parentElement.querySelector('.pd-menu');
+        if (!menu) return;
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (open && open.menu === menu) { closeMenu(); return; }
+            closeMenu();
+            menu.classList.add('pd-open');
+            btn.setAttribute('aria-expanded', 'true');
+            open = { btn: btn, menu: menu };
+            var r = btn.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight, pad = 8;
+            var left = Math.min(Math.max(pad, r.right - w), window.innerWidth - w - pad);
+            var top = r.bottom + 4;
+            if (top + h > window.innerHeight - pad) top = Math.max(pad, r.top - h - 4);
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        });
+        menu.addEventListener('click', function (e) {
+            if (e.target.closest('.pd-item')) setTimeout(closeMenu, 0);
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (open && !open.menu.contains(e.target)) closeMenu();
+    });
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+})();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

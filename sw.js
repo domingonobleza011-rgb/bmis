@@ -44,7 +44,7 @@ messaging.onBackgroundMessage(function (payload) {
     });
 });
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE  = `bmis-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `bmis-dynamic-${CACHE_VERSION}`;
 const OFFLINE_URL   = 'offline.php';
@@ -114,7 +114,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   // Strategy: Network-first for PHP pages, Cache-first for static assets
-  if (url.pathname.endsWith('.php') || url.pathname === '/') {
+  if (url.pathname.endsWith('.php') || url.pathname === '/' || ['/privacy', '/terms', '/cookie-policy'].includes(url.pathname)) {
     event.respondWith(networkFirstStrategy(request));
   } else {
     event.respondWith(cacheFirstStrategy(request));

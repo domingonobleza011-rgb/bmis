@@ -129,7 +129,6 @@ public function create_staff() {
 public function update_staff() {
     if (isset($_POST['update_staff'])) {
         $id_user = $_GET['id_user'];
-        $login_identity = $_POST['login_identity'];
         
         $lname = $_POST['lname'];
         $fname = $_POST['fname'];
@@ -141,24 +140,12 @@ public function update_staff() {
         $role = $_POST['role'];
         $addedby = $_POST['addedby'];
 
-        // Split identity for storage
-        $email_to_save = "";
-        $phone_to_save = "";
-        if (filter_var($login_identity, FILTER_VALIDATE_EMAIL)) {
-            $email_to_save = $login_identity;
-        } else {
-            $phone_to_save = $login_identity;
-        }
+        // Login identity and password are no longer editable here (left untouched).
 
         $connection = $this->openConn();
 
-        // --- PASSWORD LOGIC ---
         $password_query = "";
         $password_param = [];
-        if (!empty($_POST['password'])) {
-            $password_query = " `password` = ?, ";
-            $password_param[] = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        }
 
         // --- PHOTO UPLOAD LOGIC ---
         $photo_query = "";
@@ -191,16 +178,13 @@ public function update_staff() {
         // --- PREPARE SQL & PARAMS ---
         $params = array_merge(
             $password_param, 
-            [$login_identity, $email_to_save, $phone_to_save, $lname, $fname, $mi, $sex, $address, $contact, $position, $role, $addedby],
+            [$lname, $fname, $mi, $sex, $address, $contact, $position, $role, $addedby],
             $photo_param
         );
         $params[] = $id_user; 
 
         $sql = "UPDATE tbl_user SET 
                 $password_query
-                `login_identity` = ?, 
-                `email` = ?, 
-                `phone_number` = ?, 
                 `lname` = ?, 
                 `fname` = ?, 
                 `mi` = ?, 

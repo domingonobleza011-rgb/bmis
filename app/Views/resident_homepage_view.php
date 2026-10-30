@@ -263,6 +263,12 @@
 <!-- INCLUDE NAVBAR -->
 <?php include ROOT_PATH . '/resident_navbar.php'; ?>
 
+<div class="resident-hero">
+    <i class="bi bi-house-door-fill"></i>
+    <h1>Home</h1>
+    <p>Barangay services and updates for San Pedro residents</p>
+</div>
+
 <main class="container-custom py-4">
 
     <!-- ===== VERIFICATION STATUS BANNER ===== -->
@@ -326,7 +332,7 @@
                 ['name' => 'Guardianship', 'icon' => 'bi-people-fill', 'link' => 'services_certofguardianship.php', 'locked' => !$is_verified],
                 ['name' => 'Solo Parent', 'icon' => 'bi-person-heart', 'link' => 'services_soloparent.php', 'locked' => !$is_verified],
                 ['name' => 'Clearance', 'icon' => 'bi bi-file-earmark-check-fill', 'link' => 'services_brgyclearance.php', 'locked' => !$is_verified],
-                ['name' => 'Youth Portal', 'icon' => 'bi-people-fill', 'link' => 'resident_youth_profile.php', 'locked' => false],
+                ['name' => 'Budget', 'icon' => 'bi-wallet-fill', 'link' => 'resident_budget.php', 'locked' => false],
                 ['name' => 'Messages', 'icon' => 'bi-chat-dots-fill', 'link' => 'resident_messages.php', 'locked' => false, 'badge' => $unread_msg_count > 0 ? $unread_msg_count : null],
                 ['name' => 'Complaint', 'icon' => 'bi-exclamation-triangle-fill', 'link' => 'resident_complaint.php', 'locked' => false],
             ];
@@ -435,5 +441,6 @@
 </script>
 <!-- FCM (if needed) -->
 <script type="module" src="fcm_init.js"></script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

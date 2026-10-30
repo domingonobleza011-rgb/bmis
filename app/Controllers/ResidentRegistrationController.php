@@ -6,6 +6,17 @@ if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
 }
 header('Permissions-Policy: camera=(self)');
 require(ROOT_PATH . '/classes/resident.class.php');
+require_once(ROOT_PATH . '/classes/turnstile.php');
+
+// Cloudflare Turnstile: block the registration if the CAPTCHA wasn't passed.
+$turnstile_error = '';
+if (isset($_POST['add_resident'])) {
+    $cap = bmis_verify_turnstile();
+    if (!$cap['ok']) {
+        $turnstile_error = $cap['error'];
+        unset($_POST['add_resident']);
+    }
+}
 $residentbmis->create_resident();
 ?>
 <?php require ROOT_PATH . '/app/Views/resident_registration_view.php'; ?>

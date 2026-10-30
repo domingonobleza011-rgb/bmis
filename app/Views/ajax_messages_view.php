@@ -1,4 +1,13 @@
 
+<?php
+ob_start();
+foreach ($conversations as $conv):
+    $rid = (int) ($conv['id_resident'] ?? 0);
+    $mfname = trim(($conv['fname'] ?? '') . ' ' . ($conv['lname'] ?? ''));
+    $mfull = htmlspecialchars($mfname, ENT_QUOTES, 'UTF-8');
+    $thread = $conv['thread'] ?? [];
+    $lastMsg = !empty($thread) ? end($thread) : null;
+?>
 <tr id="msgRow<?= $rid ?>">
     <td class="align-middle">
         <input type="checkbox" class="form-check-input msg-checkbox" value="<?= $rid ?>" onchange="updateBulkToolbar()">
@@ -89,10 +98,10 @@
     </div>
 </div>
 <?php
-    endforeach;
-else:
+endforeach;
+if (empty($conversations)) {
     echo '<tr><td colspan="5" class="text-center text-muted py-4">No messages found.</td></tr>';
-endif;
+}
 $messages_html = ob_get_clean();
 
 // ── Build ID uploads HTML ─────────────────────────────────────

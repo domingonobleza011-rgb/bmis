@@ -20,7 +20,14 @@ if ($id_household <= 0) {
     exit;
 }
 
-$members = $residentbmis->view_family_members($id_household);
+try {
+    $members = $residentbmis->view_family_members($id_household);
+} catch (Throwable $e) {
+    error_log('ajax_view_family_members: ' . $e->getMessage());
+    echo '<div class="text-danger text-center py-3">Could not read the household members from the database ('
+       . htmlspecialchars(get_class($e)) . '). Check that the tbl_family_members table exists.</div>';
+    exit;
+}
 
 if (empty($members)) {
     echo '<div class="text-center text-muted py-4">

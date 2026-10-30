@@ -9,7 +9,7 @@ require_once ROOT_PATH . '/classes/main.class.php';
 
 $systemObject = new BMISClass();
 $userdetails = $systemObject->get_userdata();
-$admin_name = isset($userdetails['fname']) ? $userdetails['fname'] . ' ' . $userdetails['lname'] : 'Admin';
+$admin_name = !empty($userdetails['firstname']) ? trim($userdetails['firstname'] . ' ' . ($userdetails['surname'] ?? '')) : 'Admin';
 
 // ---- Handle: Verify (approve) resident ----
 if (isset($_POST['approve_resident'])) {

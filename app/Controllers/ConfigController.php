@@ -1,8 +1,8 @@
 <?php
-define('DB_HOST', 'sql106.infinityfree.com');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'if0_41514709_bmis');
-define('DB_USER', 'if0_41514709');
-define('DB_PASS', 'sanpedro011');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 // Gmail SMTP — used to auto-email residents who registered with an email
 // address (registration approved / document ready). GMAIL_SMTP_PASS must be

@@ -5,6 +5,18 @@
 <link href="css/" rel="stylesheet">
 
 <style>
+/* Default-mode palette: these legacy variables are only defined by the
+   sidebar when a theme (light/dark) is chosen, so without them the header
+   line, search box and borders vanish. html[data-theme] still overrides. */
+:root {
+    --white:#ffffff; --cream:#f8f5ef; --border:#dfe4ee;
+    --navy:#0f2d5a; --navy-mid:#163f78; --navy-light:#2b5ea7; --navy-pale:#e9f0fb;
+    --text-dark:#16213f; --text-mid:#4c5872; --text-light:#8894a8;
+    --gold:#c9943a; --gold-light:#dfae5b; --gold-pale:#fbf1de;
+    --teal:#0f8c7f; --teal-pale:#e2f6f3;
+    --danger-pale:#fdeceb; --success-pale:#e6f8ef;
+    --shadow-sm:0 1px 3px rgba(15,45,90,0.06); --shadow-md:0 8px 24px rgba(15,45,90,0.10);
+}
 .archive-header {
     display: flex;
     align-items: flex-start;
@@ -214,11 +226,91 @@
 }
 .btn-bulk-clear:hover { background: var(--cream); color: var(--navy); }
 .check-col { width: 44px; text-align: center !important; }
+/* ============================================================
+   MOBILE — filters become a tidy grid, table becomes cards
+   ============================================================ */
 @media (max-width: 768px) {
-    .archive-header { flex-direction: column; }
-    .filter-bar { flex-direction: column; align-items: stretch; }
-    .filter-bar .filter-search { min-width: auto; }
-    .summary-text { max-width: 140px; }
+    .container-fluid { padding-left: 12px; padding-right: 12px; }
+
+    /* header + stat chips (chips scroll sideways instead of stacking) */
+    .archive-header { flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 1rem; margin-bottom: 1rem; }
+    .archive-title-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+    .archive-title-group h1 { font-size: 1.15rem !important; }
+    .archive-stats {
+        flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; padding-bottom: 2px; margin: 0 -12px; padding-left: 12px; padding-right: 12px;
+    }
+    .archive-stats::-webkit-scrollbar { display: none; }
+    .stat-chip { flex: 0 0 auto; white-space: nowrap; padding: 8px 12px; }
+
+    /* filters / search: search + type full width, buttons side by side */
+    .filter-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; align-items: stretch; }
+    .filter-bar .filter-search, .filter-bar select { grid-column: 1 / -1; min-width: 0; width: 100%; }
+    .filter-bar .filter-search input, .filter-bar select { min-height: 42px; font-size: 16px; /* stops iOS zoom-on-focus */ }
+    .btn-filter-apply, .btn-clear-filter {
+        min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .results-count { font-size: 0.78rem; line-height: 1.5; }
+
+    /* bulk toolbar */
+    .bulk-toolbar { gap: 8px; padding: 10px 12px; }
+    .bulk-toolbar .bulk-count { flex: 1 0 100%; margin: 0; }
+    .btn-bulk-restore, .btn-bulk-delete, .btn-bulk-clear { flex: 1; justify-content: center; min-height: 38px; }
+
+    /* table -> stacked cards */
+    .archive-table-wrap { border-radius: 12px; }
+    .archive-table-wrap .table-responsive { overflow: visible; }
+    #archiveTable, #archiveTable tbody, #archiveTable tr, #archiveTable td { display: block; width: 100%; }
+    #archiveTable { border-collapse: separate; margin: 0; }
+    #archiveTable thead { display: block; }
+    #archiveTable thead tr { display: flex; align-items: center; padding: 10px 14px; background: var(--cream, #f8fafd); border-bottom: 2px solid var(--gold, #c9943a); }
+    #archiveTable thead th { display: none; }
+    #archiveTable thead th.check-col {
+        display: flex; align-items: center; gap: 10px; width: auto; padding: 0; border: 0;
+        background: none; text-align: left !important;
+    }
+    #archiveTable thead th.check-col::after { content: 'Select all'; font-size: 0.78rem; font-weight: 600; color: var(--text-mid, #5a6b85); }
+    #archiveTable tbody { padding: 10px 12px 2px; }
+    #archiveTable tbody tr:not([id^="detail-"]) {
+        background: var(--white, #fff); border: 1px solid var(--border, #dfe6f1);
+        border-radius: 12px; padding: 6px 12px; margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(15,45,90,0.06);
+    }
+    #archiveTable tbody tr:not([id^="detail-"]):has(.row-check:checked) {
+        border-color: var(--navy-light, #2b5ea7); box-shadow: 0 0 0 2px rgba(43,94,167,0.15);
+    }
+    #archiveTable tbody td, #archiveTable tbody td.check-col {
+        display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: start;
+        width: 100%; padding: 8px 0; text-align: left !important;
+        border: 0; border-bottom: 1px dashed rgba(122,145,176,.3);
+        background: none; box-shadow: none; word-break: break-word;
+    }
+    #archiveTable tbody td:last-child { border-bottom: 0; }
+    #archiveTable tbody td[data-label]::before {
+        content: attr(data-label); font-size: 0.65rem; font-weight: 700; letter-spacing: .04em;
+        text-transform: uppercase; color: var(--text-light, #7a91b0); padding-top: 3px;
+    }
+    #archiveTable td .cv { min-width: 0; }
+    .date-cell { white-space: normal; }
+    .summary-text { max-width: 100%; white-space: normal; }
+    #archiveTable td[data-label="Actions"] .cv > div { gap: 8px !important; }
+    #archiveTable td[data-label="Actions"] .cv button { min-height: 36px; flex: 1 1 auto; justify-content: center; }
+
+    /* expandable "Full Record Data" row: keep the JS toggle working in card mode */
+    #archiveTable tr[id^="detail-"] { margin: -4px 0 10px; }
+    #archiveTable tr[id^="detail-"][style*="table-row"] { display: block !important; }
+    #archiveTable tr[id^="detail-"]:not([style*="table-row"]) { display: none !important; }
+    #archiveTable tr[id^="detail-"] td { display: block; padding: 10px 12px; border-radius: 10px; }
+    .json-detail pre { max-height: 200px; font-size: 0.72rem; white-space: pre-wrap; word-break: break-word; }
+
+    /* pagination */
+    .archive-table-wrap .d-flex.justify-content-between { flex-direction: column; align-items: center !important; text-align: center; padding: 10px 8px 14px; }
+    .archive-table-wrap .pagination { flex-wrap: wrap; justify-content: center; gap: 4px; }
+    .archive-table-wrap .page-link { min-width: 38px; text-align: center; padding: 8px 12px; }
+}
+@media (max-width: 380px) {
+    .filter-bar { grid-template-columns: 1fr; }
+    #archiveTable tbody td, #archiveTable tbody td.check-col { grid-template-columns: 72px minmax(0, 1fr); }
 }
 </style>
 
@@ -317,7 +409,6 @@
                             <th style="width:40px;">#</th>
                             <th>Type</th>
                             <th>Name</th>
-                            <th>Details</th>
                             <th>Deleted</th>
                             <th>Deleted By</th>
                             <th style="min-width:180px;">Actions</th>
@@ -328,49 +419,49 @@
                             $meta = $type_meta[$rec['record_type']] ?? ['label' => $rec['record_type'], 'icon' => 'fa-file', 'color' => 'blue'];
                         ?>
                         <tr>
-                            <td class="check-col">
+                            <td class="check-col" data-label="Select"><div class="cv">
                                 <input type="checkbox" name="selected_archives[]"
                                     value="<?= $rec['id_archive'] ?>"
                                     class="row-check"
                                     style="width:16px;height:16px;cursor:pointer;">
-                            </td>
-                            <td class="date-cell text-muted"><?= $i + 1 ?></td>
+                            </div></td>
+                            <td class="date-cell text-muted" data-label="#"><div class="cv"><?= $i + 1 ?></div></td>
 
-                            <td>
+                            <td data-label="Type"><div class="cv">
                                 <span class="type-badge <?= $meta['color'] ?>">
                                     <i class="fas <?= $meta['icon'] ?>"></i>
                                     <?= $meta['label'] ?>
                                 </span>
-                            </td>
+                            </div></td>
 
-                            <td>
+                            <td data-label="Name"><div class="cv">
                                 <div style="font-weight:600; font-size:0.875rem; color:var(--text-dark);">
                                     <?= htmlspecialchars($rec['full_name']) ?>
                                 </div>
                                 <div style="font-size:0.72rem; color:var(--text-light);">ID #<?= $rec['record_id'] ?></div>
-                            </td>
+                            </div></td>
 
-                            <td>
-                                <span class="summary-text" title="<?= htmlspecialchars($rec['summary']) ?>">
-                                    <?= htmlspecialchars($rec['summary'] ?? '—') ?>
-                                </span>
-                            </td>
+                           
 
-                            <td class="date-cell">
+                            <td class="date-cell" data-label="Deleted"><div class="cv">
                                 <?= date('M d, Y', strtotime($rec['deleted_at'])) ?><br>
                                 <span style="color:var(--text-light); font-size:0.7rem;"><?= date('h:i A', strtotime($rec['deleted_at'])) ?></span>
-                            </td>
+                            </div></td>
 
-                            <td class="date-cell"><?= htmlspecialchars($rec['deleted_by'] ?? '—') ?></td>
+                            <td class="date-cell" data-label="Deleted By"><div class="cv"><?= htmlspecialchars($rec['deleted_by'] ?? '—') ?></div></td>
 
-                            <td>
+                            <td data-label="Actions"><div class="cv">
                                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
 
-                                    <!-- View Details toggle -->
+                                    <!-- View Details modal -->
                                     <button type="button"
                                             class="btn-perma-delete"
                                             style="border-color:rgba(15,45,90,0.2) !important; color:var(--navy-mid) !important;"
-                                            onclick="toggleDetail(<?= $rec['id_archive'] ?>)">
+                                            data-name="<?= htmlspecialchars($rec['full_name'], ENT_QUOTES) ?>"
+                                            data-meta="<?= htmlspecialchars($meta['label'] . ' · ID #' . $rec['record_id'], ENT_QUOTES) ?>"
+                                            data-deleted="<?= htmlspecialchars(date('M d, Y h:i A', strtotime($rec['deleted_at'])) . ' by ' . ($rec['deleted_by'] ?? '—'), ENT_QUOTES) ?>"
+                                            data-record="<?= htmlspecialchars($rec['record_data'] ?? '{}', ENT_QUOTES) ?>"
+                                            onclick="openViewModal(this)">
                                         <i class="fas fa-eye"></i> View
                                     </button>
 
@@ -391,20 +482,7 @@
                                     </button>
 
                                 </div>
-                            </td>
-                        </tr>
-
-                        <!-- Expandable JSON detail row -->
-                        <tr id="detail-<?= $rec['id_archive'] ?>" style="display:none; background:var(--cream);">
-                            <td colspan="8" class="json-detail">
-                                <strong style="font-size:0.78rem; color:var(--navy); display:block; margin-bottom:6px;">
-                                    Full Record Data
-                                </strong>
-                                <pre><?php
-                                    $json_data = json_decode($rec['record_data'], true);
-                                    echo htmlspecialchars(json_encode($json_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                                ?></pre>
-                            </td>
+                            </div></td>
                         </tr>
 
                         <?php endforeach; ?>
@@ -418,6 +496,64 @@
     </form><!-- /#bulkForm -->
 
     <!-- ══ MODALS — declared ONCE, outside the loop and outside the table ══ -->
+
+    <!-- View Details Modal -->
+    <style>
+    /* Default mode (no data-theme) */
+    #viewModal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; }
+    #viewModal .vm-card { background:#fff; border:1px solid transparent; border-radius:14px; padding:24px 28px; width:100%; max-width:640px; max-height:88vh; margin:0 16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; }
+    #viewModal .vm-head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    #viewModal .vm-icon { width:40px; height:40px; border-radius:10px; background:#e0e7ff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    #viewModal .vm-icon i { color:#0f2d5a; font-size:18px; }
+    #viewModal .vm-title { font-size:15px; font-weight:600; margin:0; color:#0f2d5a; }
+    #viewModal .vm-sub { font-size:12px; color:#6b7280; margin:0; }
+    #viewModal .vm-deleted { font-size:12px; color:#9ca3af; margin:0 0 4px; }
+    #viewModal .vm-hr { margin:12px 0; border:0; border-top:1px solid #e5e7eb; }
+    #viewModal .vm-body { overflow-y:auto; flex:1; padding-right:4px; }
+    #viewModal .vm-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+    #viewModal .vm-cell { background:#f9fafb; border:1px solid transparent; border-radius:8px; padding:8px 12px; min-width:0; }
+    #viewModal .vm-label { font-size:0.68rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#9ca3af; margin-bottom:2px; }
+    #viewModal .vm-val { font-size:0.85rem; color:#111827; word-break:break-word; }
+    #viewModal .vm-empty { font-size:13px; color:#6b7280; margin:0; }
+    #viewModal .vm-foot { display:flex; justify-content:flex-end; margin-top:16px; }
+    #viewModal .vm-close { padding:8px 18px; font-size:13px; border-radius:8px; cursor:pointer; border:1px solid #d1d5db; background:#fff; color:#6b7280; }
+    #viewModal .vm-close:hover { background:#f3f4f6; }
+    @media (max-width: 600px) { #viewModal .vm-grid { grid-template-columns:1fr; } #viewModal .vm-card { padding:20px 16px; } }
+
+    /* Light + Dark theme (driven by sidebar --tm-* variables) */
+    html[data-theme] #viewModal { background:rgba(0,0,0,.55) !important; }
+    html[data-theme="dark"] #viewModal { background:rgba(0,0,0,.72) !important; }
+    html[data-theme] #viewModal .vm-card { background:var(--tm-surface) !important; border:1px solid var(--tm-input-border) !important; box-shadow:var(--tm-pop-shadow) !important; }
+    html[data-theme] #viewModal .vm-icon { background:var(--tm-surface2) !important; border:1px solid var(--tm-border) !important; }
+    html[data-theme] #viewModal .vm-icon i { color:var(--tm-head) !important; }
+    html[data-theme] #viewModal .vm-title { color:var(--tm-head) !important; }
+    html[data-theme] #viewModal .vm-sub { color:var(--tm-mid) !important; }
+    html[data-theme] #viewModal .vm-deleted { color:var(--tm-muted) !important; }
+    html[data-theme] #viewModal .vm-hr { border-top:1px solid var(--tm-border) !important; }
+    html[data-theme] #viewModal .vm-cell { background:var(--tm-surface2) !important; border:1px solid var(--tm-border) !important; }
+    html[data-theme] #viewModal .vm-label { color:var(--tm-muted) !important; }
+    html[data-theme] #viewModal .vm-val { color:var(--tm-text) !important; }
+    html[data-theme] #viewModal .vm-empty { color:var(--tm-mid) !important; }
+    html[data-theme] #viewModal .vm-close { background:var(--tm-surface2) !important; color:var(--tm-text) !important; border:1px solid var(--tm-input-border) !important; }
+    html[data-theme] #viewModal .vm-close:hover { background:var(--tm-hover) !important; }
+    </style>
+    <div id="viewModal">
+      <div class="vm-card">
+        <div class="vm-head">
+          <div class="vm-icon"><i class="fas fa-eye"></i></div>
+          <div style="min-width:0;">
+            <p id="viewRecordName" class="vm-title"></p>
+            <p id="viewRecordMeta" class="vm-sub"></p>
+          </div>
+        </div>
+        <p id="viewRecordDeleted" class="vm-deleted"></p>
+        <hr class="vm-hr">
+        <div id="viewRecordBody" class="vm-body"></div>
+        <div class="vm-foot">
+          <button type="button" class="vm-close" onclick="closeModal('viewModal')">Close</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Restore Modal -->
     <div id="restoreModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
@@ -611,10 +747,48 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch(e) {}
 });
 
-// ── Toggle JSON detail row ───────────────────────────────────
-function toggleDetail(id) {
-    var row = document.getElementById('detail-' + id);
-    if (row) row.style.display = (row.style.display === 'none' || row.style.display === '') ? 'table-row' : 'none';
+// ── View record details modal ────────────────────────────────
+function openViewModal(btn) {
+    var data = {};
+    try { data = JSON.parse(btn.getAttribute('data-record') || '{}') || {}; } catch (e) {}
+
+    document.getElementById('viewRecordName').textContent    = btn.getAttribute('data-name');
+    document.getElementById('viewRecordMeta').textContent    = btn.getAttribute('data-meta');
+    document.getElementById('viewRecordDeleted').textContent = 'Deleted: ' + btn.getAttribute('data-deleted');
+
+    var body = document.getElementById('viewRecordBody');
+    body.innerHTML = '';
+    var keys = Object.keys(data);
+
+    if (!keys.length) {
+        var empty = document.createElement('p');
+        empty.className = 'vm-empty';
+        empty.textContent = 'No record data available.';
+        body.appendChild(empty);
+    } else {
+        var grid = document.createElement('div');
+        grid.className = 'vm-grid';
+        keys.forEach(function (k) {
+            var v = data[k];
+            if (v === null || v === '') v = '—';
+            else if (typeof v === 'object') v = JSON.stringify(v);
+
+            var cell  = document.createElement('div');
+            cell.className = 'vm-cell';
+            var label = document.createElement('div');
+            label.className = 'vm-label';
+            label.textContent = k.replace(/_/g, ' ');
+            var val = document.createElement('div');
+            val.className = 'vm-val';
+            val.textContent = v;
+
+            cell.appendChild(label);
+            cell.appendChild(val);
+            grid.appendChild(cell);
+        });
+        body.appendChild(grid);
+    }
+    document.getElementById('viewModal').style.display = 'flex';
 }
 
 // ── Close modal ──────────────────────────────────────────────
@@ -679,6 +853,7 @@ function openBulkModal(type) {
 
 // ── Close modals by clicking backdrop ───────────────────────
 window.addEventListener('click', function (e) {
+    if (e.target.id === 'viewModal')        closeModal('viewModal');
     if (e.target.id === 'restoreModal')     closeModal('restoreModal');
     if (e.target.id === 'deleteModal')      closeModal('deleteModal');
     if (e.target.id === 'bulkRestoreModal') closeModal('bulkRestoreModal');

@@ -3,7 +3,7 @@
 
 <style>
 :root {
-    --sk: #1a4480; --sk-mid: #2b5ea7; --sk-pale: #e8f5ed;
+    --sk: #1a4480; --sk-mid: #2b5ea7; --sk-pale: #e8eef8;
     --gold: #c9943a; --gold-pale: #fdf3e3;
     --shadow-sm: 0 2px 8px rgba(26,107,58,0.07);
     --shadow-md: 0 6px 24px rgba(26,107,58,0.11);

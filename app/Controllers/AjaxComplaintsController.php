@@ -48,9 +48,20 @@ $stmt->execute($params);
 $complaints = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ob_start();
-foreach ($complaints as $c):
+foreach ($complaints as $c) {
     $status     = $c['status'];
     $card_class = $status === 'pending' ? 'c-pending' : ($status === 'in_progress' ? 'c-inprog' : 'c-resolved');
     $modal_id   = 'modal-' . $c['id'];
-?>
-<?php require ROOT_PATH . '/app/Views/ajax_complaints_view.php'; ?>
+    require ROOT_PATH . '/app/Views/ajax_complaints_view.php';
+}
+$html = ob_get_clean();
+
+header('Content-Type: application/json');
+echo json_encode([
+    'html'             => $html,
+    'count_all'        => $count_all,
+    'count_pending'    => $count_pending,
+    'count_inprogress' => $count_inprogress,
+    'count_resolved'   => $count_resolved,
+    'total_shown'      => count($complaints),
+]);

@@ -1,0 +1,57 @@
+/* Blurred photo background for login / forgot password / registration */
+html { background: #f0f2f5; }
+body { background: transparent !important; position: relative; }
+
+/* the photo, blurred (scaled up a bit so the blur doesn't show soft edges) */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: url('../assets/background.jpg') center / cover no-repeat;
+    filter: blur(2px);
+    transform: scale(1.06);
+}
+/* light wash so text and cards stay readable */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(255, 255, 255, .45);
+    pointer-events: none;
+}
+
+/* ---- login.php: panels were solid grey, let the photo show through ---- */
+.brand-panel {
+    /* soft white glow behind the text so it stays readable over the photo */
+    background: radial-gradient(ellipse 70% 62% at 50% 50%, rgba(255,255,255,.82) 0%, rgba(255,255,255,.55) 55%, rgba(255,255,255,0) 100%) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-right: 0 !important;
+}
+.login-panel { background: transparent !important; }
+.login-container {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2rem 1.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .18);
+}
+@media (max-width: 576px) {
+    .login-container { padding: 1.5rem 1.15rem; }
+}
+
+/* brand text: darker + light halo so it never washes out against the photo */
+.brand-panel h1,
+.brand-panel .tagline,
+.brand-panel .features .feature-item span {
+    text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 14px rgba(255,255,255,.85);
+}
+.brand-panel .tagline {
+    color: #2b2f36 !important;
+    font-weight: 500;
+}
+.brand-panel .features .feature-item span {
+    color: #1c1e21 !important;
+    font-weight: 700;
+}

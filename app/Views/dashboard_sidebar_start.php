@@ -1,0 +1,1540 @@
+<?php
+/* ============================================================
+   ADMIN TOPBAR NOTIFICATIONS
+   Surfaces 3 things the admin needs to act on:
+     1) New certificate / document requests
+     2) New (unread) resident messages
+     3) New pending requests (registrations + password resets)
+   Wrapped defensively so a missing table never breaks a page
+   that includes this sidebar.
+   ============================================================ */
+if (!isset($conn) || !($conn instanceof PDO)) {
+    try {
+        require_once __DIR__ . '/classes/conn.php';
+    } catch (Throwable $e) {
+        $conn = null;
+    }
+}
+
+$notif_cert_total    = 0;
+$notif_cert_items    = [];
+$notif_msg_total     = 0;
+$notif_msg_items     = [];
+$notif_pending_total = 0;
+$notif_pending_items = [];
+
+if (isset($conn) && $conn instanceof PDO) {
+
+    // ── 1) New certificate / document requests ──────────────────
+    // A row in these tables IS the pending request; it's removed
+    // once the admin processes/archives it. For document types that
+    // support generation tracking, only rows that haven't been
+    // generated yet (is_generated = 0/NULL) count as "new" here —
+    // once a certificate is generated it drops out of this
+    // notification, even if the row itself hasn't been archived.
+    // Complaints have no generation step, so they still use 1=1.
+    $not_generated_where = "(is_generated IS NULL OR is_generated = 0)";
+    $cert_sources = [
+        ['label' => 'Certificate of Residency', 'table' => 'tbl_rescert',    'where' => $not_generated_where, 'page' => 'admn_certofres.php',       'icon' => 'fa-file-word'],
+        ['label' => 'Certificate of Good Moral Character', 'table' => 'tbl_goodmoral', 'where' => $not_generated_where, 'page' => 'admn_certofgoodmoral.php', 'icon' => 'fa-user-check'],
+        ['label' => 'Certificate of Livestock Ownership', 'table' => 'tbl_livestock', 'where' => $not_generated_where, 'page' => 'admn_certoflivestock.php', 'icon' => 'fa-horse'],
+        ['label' => 'Certificate of Guardianship', 'table' => 'tbl_guardianship', 'where' => $not_generated_where,        'page' => 'admn_certofguardianship.php', 'icon' => 'fa-people-arrows'],
+        ['label' => 'Solo Parent Certification', 'table' => 'tbl_soloparent', 'where' => $not_generated_where,            'page' => 'admn_soloparent.php',      'icon' => 'fa-child'],
+        ['label' => 'Certificate of Indigency',  'table' => 'tbl_indigency', 'where' => $not_generated_where,             'page' => 'admn_certofindigency.php', 'icon' => 'fa-table'],
+        ['label' => 'Business Permit',           'table' => 'tbl_bspermit', 'where' => $not_generated_where,             'page' => 'admn_bspermit.php',        'icon' => 'fa-file-contract'],
+        ['label' => 'Barangay ID',               'table' => 'tbl_brgyid',   'where' => $not_generated_where, 'page' => 'admn_brgyid.php',          'icon' => 'fa-id-card'],
+        ['label' => 'Barangay Clearance',        'table' => 'tbl_clearance','where' => $not_generated_where,             'page' => 'admn_brgyclearance.php',   'icon' => 'fa-file'],
+        ['label' => 'Complaints',                'table' => 'tbl_complaints', 'where' => "status = 'pending'", 'page' => 'admn_complaints.php',      'icon' => 'fa-file'],
+    ];
+
+    foreach ($cert_sources as $src) {
+        try {
+            $cnt = (int) $conn->query("SELECT COUNT(*) FROM {$src['table']} WHERE {$src['where']}")->fetchColumn();
+            if ($cnt > 0) {
+                $notif_cert_total += $cnt;
+                $notif_cert_items[] = ['label' => $src['label'], 'count' => $cnt, 'page' => $src['page'], 'icon' => $src['icon']];
+            }
+        } catch (Throwable $e) { /* table may not exist yet - skip */ }
+    }
+
+    // ── 2) New (unread) messages from residents ──────────────────
+    try {
+        $notif_msg_total = (int) $conn->query("SELECT COUNT(*) FROM admin_messages WHERE status = 'unread'")->fetchColumn();
+        if ($notif_msg_total > 0) {
+            $stmt = $conn->query("SELECT m.id_admin_msg, m.message_text, m.date_sent, r.fname, r.lname
+                                   FROM admin_messages m
+                                   LEFT JOIN tbl_resident r ON m.id_resident = r.id_resident
+                                   WHERE m.status = 'unread'
+                                   ORDER BY m.date_sent DESC
+                                   LIMIT 5");
+            $notif_msg_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (Throwable $e) { /* table may not exist yet - skip */ }
+
+    // ── 3) New pending requests (registrations + password resets) ─
+    try {
+        $reg_count = (int) $conn->query("SELECT COUNT(*) FROM tbl_resident_pending WHERE application_status = 'pending'")->fetchColumn();
+        if ($reg_count > 0) {
+            $notif_pending_total += $reg_count;
+            $notif_pending_items[] = ['label' => 'New Resident Registration', 'count' => $reg_count, 'page' => 'admn_resident_pending.php', 'icon' => 'fa-user-clock'];
+        }
+    } catch (Throwable $e) { /* table may not exist yet - skip */ }
+
+    try {
+        $pw_count = (int) $conn->query("SELECT COUNT(*) FROM tbl_password_reset_requests WHERE status = 'pending'")->fetchColumn();
+        if ($pw_count > 0) {
+            $notif_pending_total += $pw_count;
+            $notif_pending_items[] = ['label' => 'Password Reset Request', 'count' => $pw_count, 'page' => 'admn_password_reset_requests.php', 'icon' => 'fa-key'];
+        }
+    } catch (Throwable $e) { /* table may not exist yet - skip */ }
+}
+
+$notif_grand_total = $notif_cert_total + $notif_msg_total + $notif_pending_total;
+
+// Current page + query string, used so "mark as read" actions redirect back here
+$notif_current_page = basename($_SERVER['PHP_SELF']);
+if (!empty($_SERVER['QUERY_STRING'])) {
+    $notif_current_page .= '?' . $_SERVER['QUERY_STRING'];
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Barangay San Pedro</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/pwa/favicon-32x32.png">
+
+    <!-- Custom fonts for this template-->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://kit.fontawesome.com/67a9b7069e.js" crossorigin="anonymous"></script>
+
+    <!-- Custom styles for this template-->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<style>
+
+/* ============================================================
+   BARANGAY SAN PEDRO — ADMIN DASHBOARD
+   Design system: warm navy + antique gold, "civic hall" feel
+   ============================================================ */
+
+:root {
+    /* core palette */
+    --navy-900:   #0a1e3d;
+    --navy-800:   #0f2d5a;
+    --navy-700:   #163f78;
+    --navy-500:   #2b5ea7;
+    --navy-100:   #e9f0fb;
+    --navy-50:    #f4f8fd;
+
+    --gold-600:   #b9832c;
+    --gold-500:   #c9943a;
+    --gold-400:   #dfae5b;
+    --gold-200:   #efd8a9;
+    --gold-100:   #fbf1de;
+
+    --teal-600:   #0f8c7f;
+    --teal-100:   #e2f6f3;
+
+    --danger:     #d94b41;
+    --danger-100: #fdeceb;
+    --warning:    #c9821a;
+    --warning-100:#fdf1de;
+    --success:    #1f9d63;
+    --success-100:#e6f8ef;
+
+    --ink:        #16213f;
+    --ink-soft:   #4c5872;
+    --ink-faint:  #8894a8;
+
+    --paper:      #ffffff;
+    --canvas:     #f3f6fb;
+    --line:       #e5eaf3;
+
+    --shadow-1:   0 1px 3px rgba(15,45,90,0.06), 0 1px 2px rgba(15,45,90,0.04);
+    --shadow-2:   0 8px 24px rgba(15,45,90,0.10);
+    --shadow-3:   0 18px 44px rgba(15,45,90,0.16);
+
+    --r-lg: 16px;
+    --r-md: 12px;
+    --r-sm: 8px;
+
+    --ease: cubic-bezier(.4,0,.2,1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+}
+
+body {
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+    background: var(--canvas) !important;
+    color: var(--ink) !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', 'DM Sans', sans-serif !important; }
+
+h4 {
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    color: var(--navy-800) !important;
+    letter-spacing: 0.1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.9rem;
+}
+h4::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(to bottom, var(--gold-500), var(--gold-400));
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+hr { border-color: var(--line) !important; opacity: 1 !important; margin: 0.5rem 0 !important; }
+
+#wrapper { width: 100%; max-width: 100%; overflow-x: hidden; }
+
+/* ── Scrollbars (webkit) ─────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c7d2e3; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-500); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+    background:
+        radial-gradient(120% 140% at 0% 0%, rgba(201,148,58,0.14) 0%, rgba(201,148,58,0) 45%),
+        linear-gradient(190deg, var(--navy-900) 0%, var(--navy-800) 55%, #102a52 100%) !important;
+    border-right: none !important;
+    box-shadow: 4px 0 28px rgba(10,30,61,0.22);
+    width: 232px !important;
+    min-width: 232px !important;
+    max-width: 232px !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .collapse.show { overflow: visible !important; }
+.sidebar .collapse { width: 100% !important; }
+
+/* Brand */
+.sidebar-brand {
+    padding: 1.5rem 1.15rem 1.3rem !important;
+    background: rgba(0,0,0,0.16) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+}
+.sidebar-brand-logo {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #fff;
+    padding: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.sidebar-brand-text {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.86rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.2px !important;
+    color: rgba(255,255,255,0.96) !important;
+    text-transform: none !important;
+    line-height: 1.3;
+}
+
+.sidebar-divider {
+    border-top-color: rgba(255,255,255,0.08) !important;
+    margin: 0.4rem 1.1rem !important;
+}
+
+.sidebar-heading {
+    font-size: 0.64rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.6px !important;
+    text-transform: uppercase !important;
+    color: rgba(255,255,255,0.32) !important;
+    padding: 0.8rem 1.2rem 0.35rem !important;
+}
+
+/* Nav links */
+.sidebar .nav-item { padding: 0 10px; }
+.sidebar .nav-item .nav-link {
+    color: rgba(255,255,255,0.78) !important;
+    font-size: 0.855rem !important;
+    font-weight: 450 !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    margin: 2px 0;
+    transition: background-color .18s var(--ease), color .18s var(--ease), transform .12s var(--ease) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 10px !important;
+    line-height: 1.2 !important;
+    border-left: none;
+    position: relative;
+}
+.sidebar .nav-item .nav-link span { line-height: 1.2 !important; }
+
+.sidebar .nav-item .nav-link i,
+.sidebar .nav-item .nav-link .bi {
+    font-size: 0.92rem;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.45);
+    transition: color .18s var(--ease);
+}
+
+.sidebar .nav-item .nav-link:hover {
+    color: var(--paper) !important;
+    background: rgba(255,255,255,0.08) !important;
+}
+.sidebar .nav-item .nav-link:hover i,
+.sidebar .nav-item .nav-link:hover .bi { color: var(--gold-400); }
+
+.sidebar .nav-item.active .nav-link,
+.sidebar .nav-item .nav-link.active {
+    color: var(--navy-900) !important;
+    background: linear-gradient(135deg, var(--gold-400), var(--gold-500)) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 6px 16px rgba(201,148,58,0.32);
+}
+.sidebar .nav-item.active .nav-link i,
+.sidebar .nav-item .nav-link.active i { color: var(--navy-900) !important; }
+
+/* Submenus */
+.sidebar .collapse-inner {
+    width: calc(100% - 4px) !important;
+    max-width: 100%;
+    margin: 6px auto 4px !important;
+    box-sizing: border-box;
+    padding: 6px !important;
+    background: rgba(255,255,255,0.97) !important;
+    border-radius: var(--r-md) !important;
+    box-shadow: var(--shadow-2), inset 0 0 0 1px rgba(255,255,255,0.6);
+    overflow: hidden;
+}
+
+.sidebar .collapse-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    padding: 9px 11px !important;
+    font-size: 0.78rem !important;
+    line-height: 1.3 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    color: var(--ink-soft) !important;
+    background: transparent !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.sidebar .collapse-item i,
+.sidebar .collapse-item .bi {
+    width: 17px !important;
+    min-width: 17px !important;
+    text-align: center !important;
+    color: var(--navy-700) !important;
+    flex-shrink: 0 !important;
+}
+.sidebar .collapse-item:hover {
+    background: var(--navy-100) !important;
+    color: var(--navy-800) !important;
+}
+.sidebar .collapse-item.active {
+    background: var(--gold-100) !important;
+    color: var(--navy-900) !important;
+    font-weight: 600 !important;
+}
+
+#collapseBarangayServices .collapse-inner {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#collapseBarangayServices .collapse-inner::-webkit-scrollbar { width: 5px; }
+#collapseBarangayServices .collapse-inner::-webkit-scrollbar-thumb { background: var(--gold-500); border-radius: 10px; }
+#collapseBarangayServices .collapse-inner { scrollbar-width: thin; scrollbar-color: var(--gold-500) transparent; }
+
+.sidebar #collapseUserMgmt,
+.sidebar #collapseBarangayServices { width: 100%; max-width: 100%; }
+
+/* Sidebar collapse toggle circle (desktop) */
+#sidebarToggle {
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    transition: background-color .15s var(--ease);
+}
+#sidebarToggle:hover { background: rgba(255,255,255,0.18); }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+    background: var(--paper) !important;
+    box-shadow: var(--shadow-1) !important;
+    border-bottom: 1px solid var(--line) !important;
+    padding: 0 22px !important;
+    height: 64px;
+    align-items: center;
+}
+
+.topbar .nav-item .nav-link {
+    color: var(--ink-soft) !important;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 9px 14px !important;
+    border-radius: var(--r-sm);
+    transition: background-color .18s var(--ease), color .18s var(--ease);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.topbar .nav-item .nav-link:hover { background: var(--navy-50); color: var(--navy-800) !important; }
+
+.topbar .text-gray-800 { color: var(--ink) !important; font-weight: 500; }
+
+#sidebarToggleTop {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--navy-50);
+    color: var(--navy-800) !important;
+    transition: background-color .15s var(--ease);
+}
+#sidebarToggleTop:hover { background: var(--navy-100); }
+
+.topbar-divider { border-left: 1px solid var(--line) !important; opacity: 1 !important; }
+
+/* ── Notification Bell Dropdown ── */
+#notifDropdown {
+    position: relative;
+    color: var(--ink-soft) !important;
+}
+#notifDropdown i { font-size: 1.05rem; }
+#notifDropdown .badge-counter {
+    background: linear-gradient(135deg, var(--danger), #ef6b62);
+    color: #fff;
+    border-radius: 50px;
+    font-size: 0.64rem;
+    font-weight: 700;
+    padding: 2px 5px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1.2;
+    box-shadow: 0 0 0 2px #fff;
+    position: absolute;
+    top: 16px;
+    right: -6px;
+}
+
+.notif-dropdown-menu {
+    width: 388px;
+    max-width: 90vw;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    padding: 0;
+    border: none;
+    border-radius: 18px;
+    box-shadow: var(--shadow-3);
+    margin-top: 10px !important;
+}
+
+.notif-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 18px 24px 16px 20px;
+    background: linear-gradient(135deg, var(--navy-900), var(--navy-700));
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.notif-dropdown-header .notif-header-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #fff;
+    letter-spacing: 0.1px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.notif-dropdown-header .notif-header-title i { color: var(--gold-400); font-size: 0.9rem; }
+.notif-dropdown-header .notif-header-count {
+    background: var(--gold-500);
+    color: var(--navy-900);
+    font-weight: 700;
+    font-size: 0.7rem;
+    padding: 3px 11px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.notif-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px 11px 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--navy-700);
+    background: var(--navy-50);
+    flex-wrap: wrap;
+    row-gap: 4px;
+    border-bottom: 1px solid var(--line);
+}
+.notif-section-title i {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--gold-500);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-1);
+}
+.notif-section-title .notif-section-count {
+    margin-left: auto;
+    background: var(--navy-900);
+    color: #fff;
+    border-radius: 20px;
+    padding: 1px 9px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.notif-item {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 24px 13px 20px !important;
+    font-size: 0.83rem;
+    white-space: normal !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid #f1f3f8 !important;
+    transition: background-color .15s var(--ease);
+}
+.notif-item:hover, .notif-item-msg:hover { background: var(--navy-50) !important; }
+
+.notif-icon-wrap {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--gold-100);
+    color: var(--gold-600);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.84rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.notif-item span { color: var(--ink); }
+.notif-item .notif-item-badge {
+    margin-left: auto;
+    margin-right: 2px;
+    background: var(--gold-100);
+    color: var(--gold-600);
+    border: 1px solid var(--gold-200);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.notif-item small.notif-time {
+    display: block;
+    color: var(--ink-faint);
+    font-size: 0.71rem;
+    margin-top: 3px;
+}
+
+.notif-empty {
+    padding: 18px 20px 22px;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.notif-empty::before {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: var(--gold-400);
+}
+
+.notif-viewall {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--navy-800) !important;
+    padding: 12px !important;
+    background: var(--navy-50);
+    border-top: 1px solid var(--line);
+    transition: background-color .15s var(--ease);
+}
+.notif-viewall:hover { background: var(--navy-100); text-decoration: none !important; }
+
+.notif-mark-all-form { margin-left: auto; }
+.notif-mark-all {
+    background: none;
+    border: none;
+    color: var(--navy-700);
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 9px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.notif-mark-all:hover { background: #fff; color: var(--gold-600); }
+
+.notif-item-msg {
+    display: flex !important;
+    align-items: flex-start;
+    padding: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid #f1f3f8 !important;
+    transition: background-color .15s var(--ease);
+}
+.notif-item-msg .notif-item-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 13px 8px 13px 20px;
+    font-size: 0.83rem;
+    text-decoration: none;
+}
+.notif-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--navy-800), var(--navy-500));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.78rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.notif-item-msg .notif-item-link span { color: var(--ink); }
+.notif-item-msg .notif-item-link small.notif-time { color: var(--ink-faint); }
+
+.notif-mark-item-form { flex-shrink: 0; padding-right: 20px; padding-top: 11px; }
+.notif-mark-item {
+    background: var(--gold-100);
+    border: 1px solid var(--gold-200);
+    color: var(--gold-600);
+    border-radius: 50%;
+    width: 27px;
+    height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.notif-mark-item:hover { background: var(--navy-900); color: #fff; border-color: var(--navy-900); }
+
+.notif-caught-up { text-align: center; padding: 30px 18px; color: var(--ink-faint); }
+.notif-caught-up i { font-size: 1.7rem; color: var(--gold-500); display: block; margin-bottom: 8px; }
+.notif-caught-up span { font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--navy-900); font-size: 0.96rem; }
+
+/* ============================================================
+   PAGE CONTENT — shared components used across admin pages
+   ============================================================ */
+
+.page-header {
+    background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+    color: #fff;
+    border-radius: var(--r-lg);
+    padding: 26px 30px;
+    margin-bottom: 26px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: var(--shadow-2);
+    position: relative;
+    overflow: hidden;
+}
+.page-header::after {
+    content: '';
+    position: absolute;
+    top: -40%; right: -8%;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(201,148,58,0.28) 0%, rgba(201,148,58,0) 70%);
+    pointer-events: none;
+}
+.page-header .header-icon {
+    width: 58px; height: 58px; border-radius: var(--r-md);
+    background: rgba(255,255,255,0.14);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+}
+.page-header h2 { margin: 0; font-size: 1.55rem; font-weight: 700; }
+.page-header p  { margin: 4px 0 0; opacity: 0.78; font-size: 0.88rem; }
+
+/* Stat cards */
+.stat-card {
+    border-radius: var(--r-md);
+    padding: 20px 22px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--line);
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+    background: var(--paper);
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.stat-card .stat-icon {
+    width: 50px; height: 50px; border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+}
+.stat-card .stat-val { font-size: 1.85rem; font-weight: 800; line-height: 1; font-family: 'Outfit', sans-serif; }
+.stat-card .stat-lbl { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; opacity: 0.6; margin-top: 4px; }
+
+.stat-all      { border-color: var(--line); }
+.stat-all      .stat-icon { background: var(--navy-100); color: var(--navy-800); }
+.stat-all      .stat-val  { color: var(--navy-800); }
+
+.stat-pending  { background: var(--warning-100); border-color: var(--gold-200); }
+.stat-pending  .stat-icon { background: #ffe6b3; color: var(--warning); }
+.stat-pending  .stat-val  { color: var(--warning); }
+
+.stat-resolved { background: var(--success-100); border-color: #bfe9d3; }
+.stat-resolved .stat-icon { background: #c3f2da; color: var(--success); }
+.stat-resolved .stat-val  { color: var(--success); }
+
+/* Filters */
+.filter-bar {
+    background: var(--paper); border-radius: var(--r-md);
+    padding: 18px 22px; margin-bottom: 22px;
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: var(--r-sm); font-size: 0.875rem;
+    border: 1.5px solid var(--line);
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus {
+    border-color: var(--navy-700);
+    box-shadow: 0 0 0 3px rgba(22,63,120,0.12);
+}
+.btn-filter {
+    background: var(--navy-800); color: #fff;
+    border-radius: var(--r-sm); border: none;
+    padding: 9px 20px; font-size: 0.875rem; font-weight: 600;
+    transition: background-color .15s var(--ease);
+}
+.btn-filter:hover { background: var(--navy-900); color: #fff; }
+.btn-filter-clear {
+    background: var(--navy-50); color: var(--ink-soft);
+    border-radius: var(--r-sm); border: none;
+    padding: 9px 16px; font-size: 0.875rem;
+}
+.btn-filter-clear:hover { background: var(--navy-100); }
+
+/* Filter tabs */
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 0; flex-wrap: wrap; }
+.filter-tab {
+    padding: 8px 18px; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; background: var(--paper);
+    color: var(--ink-soft); text-decoration: none; transition: all .15s var(--ease);
+}
+.filter-tab:hover, .filter-tab.active { border-color: var(--navy-800); background: var(--navy-800); color: #fff; }
+.filter-tab.tab-pending.active  { border-color: var(--gold-500); background: var(--warning-100); color: var(--warning); }
+.filter-tab.tab-resolved.active { border-color: var(--success); background: var(--success-100); color: var(--success); }
+
+/* Complaint / record cards */
+.complaint-list { display: flex; flex-direction: column; gap: 16px; }
+
+.c-card {
+    background: var(--paper); border-radius: var(--r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--line);
+    transition: box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+.c-card:hover { box-shadow: var(--shadow-2); }
+.c-card.c-pending  { border-left-color: var(--gold-500); }
+.c-card.c-resolved { border-left-color: var(--success); }
+
+.c-card-header {
+    display: flex; flex-wrap: wrap;
+    align-items: flex-start; justify-content: space-between;
+    gap: 10px; margin-bottom: 14px;
+}
+.c-id   { font-size: 0.7rem; color: var(--ink-faint); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.c-name { font-size: 1.05rem; font-weight: 700; color: var(--navy-800); font-family: 'Outfit', sans-serif; }
+.c-contact { font-size: 0.82rem; color: var(--ink-faint); }
+
+.badge-pending  { background: var(--warning-100); color: var(--warning); border: 1px solid var(--gold-200); border-radius: var(--r-sm); padding: 4px 10px; font-size: 0.75rem; font-weight: 700; }
+.badge-resolved { background: var(--success-100); color: var(--success); border: 1px solid #bfe9d3; border-radius: var(--r-sm); padding: 4px 10px; font-size: 0.75rem; font-weight: 700; }
+
+.c-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; font-size: 0.85rem; color: var(--ink-soft); }
+.c-meta span { display: flex; align-items: center; gap: 5px; }
+
+.c-category-tag {
+    display: inline-block;
+    background: var(--navy-100); color: var(--navy-800);
+    border-radius: var(--r-sm); padding: 3px 10px;
+    font-size: 0.78rem; font-weight: 600;
+}
+.c-description {
+    font-size: 0.9rem; color: var(--ink);
+    border-left: 3px solid var(--line);
+    padding-left: 12px; margin: 12px 0;
+    line-height: 1.55;
+}
+.c-remarks {
+    background: var(--canvas); border-radius: var(--r-sm);
+    padding: 10px 14px; font-size: 0.85rem;
+    color: var(--ink-soft); margin-top: 10px;
+    border: 1px solid var(--line);
+}
+.c-photo { margin: 12px 0; }
+.c-photo img { max-height: 160px; border-radius: var(--r-sm); border: 1px solid var(--line); cursor: pointer; }
+
+.c-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn-resolve {
+    background: var(--success); color: #fff; border: none;
+    border-radius: var(--r-sm); padding: 8px 18px; font-size: 0.85rem; font-weight: 600;
+    transition: background-color .15s var(--ease);
+}
+.btn-resolve:hover { background: #17825253; background: #17824f; color: #fff; }
+.btn-set-pending {
+    background: var(--gold-500); color: #fff; border: none;
+    border-radius: var(--r-sm); padding: 8px 18px; font-size: 0.85rem; font-weight: 600;
+}
+.btn-set-pending:hover { background: var(--gold-600); color: #fff; }
+.btn-delete-card {
+    background: var(--danger); color: #fff; border: none;
+    border-radius: var(--r-sm); padding: 8px 18px; font-size: 0.85rem; font-weight: 600;
+}
+.btn-delete-card:hover { background: #bb3a31; color: #fff; }
+.btn-view-detail {
+    background: var(--navy-50); color: var(--ink-soft); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: 8px 16px; font-size: 0.85rem; font-weight: 600;
+}
+.btn-view-detail:hover { background: var(--navy-100); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
+.empty-state i { font-size: 4rem; display: block; margin-bottom: 16px; color: var(--gold-200); }
+
+/* Modal tweaks */
+.modal-content { border-radius: var(--r-lg); overflow: hidden; border: none; }
+.modal-header { background: linear-gradient(135deg, var(--navy-900), var(--navy-700)); color: #fff; border-radius: 0; }
+.modal-header .btn-close { filter: invert(1); }
+.modal-footer { border-top: 1px solid var(--line); }
+
+/* ============================================================
+   UNIFORM COMPACT DATA TABLE — applies site-wide to every
+   admin listing table (certificates, records, requests, logs).
+   Modeled on the admn_certofres table, but row height/padding
+   is compressed Excel-style so more records fit in first view.
+   Since this lives in the shared sidebar include, it cascades
+   to every admin page automatically — no per-page edits needed.
+   ============================================================ */
+.table-responsive {
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-1);
+    border: 1px solid var(--line);
+    background: var(--paper);
+}
+table.table {
+    margin-bottom: 0 !important;
+    font-size: 0.78rem !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+/* Header — normalizes alert-info / bg-info / table-dark variants
+   used across different pages into one navy/gold header */
+table.table thead th,
+table.table thead.alert-info th,
+table.table thead.table-dark th,
+table.table thead.bg-info th,
+table.table thead tr th {
+    background: linear-gradient(135deg, var(--navy-800), var(--navy-700)) !important;
+    color: #fff !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 8px 10px !important;
+    border: none !important;
+    border-bottom: 2px solid var(--gold-500) !important;
+    white-space: nowrap;
+}
+
+/* Body rows — compact like a spreadsheet, zebra-striped, clear hover */
+table.table tbody td,
+table.table tbody th {
+    padding: 5px 10px !important;
+    font-size: 0.78rem !important;
+    vertical-align: middle !important;
+    border-color: var(--line) !important;
+    line-height: 1.35 !important;
+}
+table.table tbody tr:nth-child(even) { background: var(--navy-50); }
+table.table tbody tr:hover { background: var(--gold-100) !important; }
+table.table.table-dark tbody tr:nth-child(even) { background: rgba(255,255,255,0.04); }
+table.table.table-dark tbody tr:hover { background: rgba(201,148,58,0.18) !important; }
+
+/* Action buttons/links inside table cells — overrides oversized
+   inline pill buttons (width/font-size/border-radius) site-wide,
+   since an !important rule in this stylesheet outranks a plain
+   inline style attribute without !important. */
+table.table td .btn,
+table.table td a.btn {
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    font-size: 0.68rem !important;
+    padding: 3px 9px !important;
+    border-radius: 6px !important;
+    margin: 1px 2px !important;
+    line-height: 1.5 !important;
+    box-shadow: none !important;
+}
+table.table td form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Status pill <span>s inside cells (Generated / Pending / etc.) */
+table.table td span[style*="border-radius:6px"],
+table.table td span[style*="border-radius: 6px"] {
+    padding: 2px 8px !important;
+    font-size: 0.68rem !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    table.table thead th { padding: 7px 8px !important; font-size: 0.66rem !important; }
+    table.table tbody td, table.table tbody th { padding: 5px 8px !important; font-size: 0.74rem !important; }
+    table.table td .btn, table.table td a.btn { font-size: 0.64rem !important; padding: 3px 7px !important; }
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        width: 232px !important;
+        min-width: 232px !important;
+        max-width: 232px !important;
+    }
+    #content-wrapper { width: calc(100% - 232px); max-width: calc(100% - 232px); }
+    .topbar { padding: 0 14px !important; }
+    .page-header { padding: 22px; }
+    .page-header h2 { font-size: 1.4rem; }
+    .stat-card { padding: 16px; }
+    .stat-card .stat-val { font-size: 1.6rem; }
+    .filter-bar { padding: 15px; }
+}
+
+@media (max-width: 767.98px) {
+    body { font-size: 14px !important; }
+    #wrapper { width: 100%; overflow-x: hidden !important; }
+
+    .sidebar {
+        position: fixed !important;
+        top: 0; left: 0; bottom: 0;
+        z-index: 1050;
+        width: 62vw !important;
+        min-width: 62vw !important;
+        max-width: 300px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        transform: translateX(-100%);
+        transition: transform 0.28s var(--ease);
+    }
+    .sidebar.toggled { transform: translateX(0); width: 62vw !important; max-width: 300px !important; }
+
+    #content-wrapper { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; }
+    #content { width: 100%; max-width: 100%; overflow-x: hidden; }
+
+    .sidebar .sidebar-brand { min-height: 70px; padding: 15px 14px !important; }
+    .sidebar-brand-text { font-size: 0.8rem !important; }
+    .sidebar .nav-item .nav-link { padding: 11px 12px !important; font-size: 0.78rem !important; gap: 8px !important; }
+    .sidebar .nav-item .nav-link i, .sidebar .nav-item .nav-link .bi { width: 17px; font-size: 0.85rem; }
+    .sidebar .collapse-item { padding: 9px 10px !important; font-size: 0.75rem !important; }
+
+    .topbar { height: 60px !important; min-height: 60px !important; padding: 0 8px !important; margin-bottom: 15px !important; width: 100% !important; }
+    #sidebarToggleTop { width: 40px; height: 40px; margin-right: 4px !important; flex-shrink: 0; border-radius: 10px !important; }
+    .topbar .navbar-nav { margin-left: auto !important; display: flex; align-items: center; }
+    .topbar .nav-item { flex-shrink: 0; }
+    .topbar .nav-link { padding: 8px !important; }
+    .topbar-divider { display: none !important; }
+    .topbar .d-none.d-lg-inline { display: none !important; }
+    #notifDropdown { padding: 9px !important; }
+    #notifDropdown i { font-size: 1rem; }
+    #notifDropdown .badge-counter { font-size: 0.58rem; min-width: 15px; padding: 2px 4px; }
+
+    .notif-dropdown-menu {
+        position: fixed !important;
+        top: 60px !important; right: 8px !important; left: 8px !important;
+        width: auto !important; max-width: none !important;
+        max-height: calc(100vh - 75px) !important;
+        border-radius: 16px !important;
+    }
+    .notif-dropdown-header { padding: 14px 16px !important; }
+    .notif-dropdown-header .notif-header-title { font-size: 0.95rem; }
+    .notif-section-title { padding: 10px 15px 8px !important; font-size: 0.65rem; }
+    .notif-item { padding: 11px 15px !important; gap: 9px; font-size: 0.78rem; }
+    .notif-icon-wrap { width: 28px; height: 28px; border-radius: 8px; font-size: 0.72rem; }
+    .notif-item .notif-item-badge { font-size: 0.62rem; padding: 2px 7px; }
+    .notif-item-msg .notif-item-link { gap: 9px; padding: 11px 5px 11px 15px; min-width: 0; }
+    .notif-item-msg .notif-item-link > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+    .notif-avatar { width: 28px; height: 28px; font-size: 0.7rem; }
+    .notif-mark-item-form { padding-right: 12px; padding-top: 9px; }
+    .notif-mark-item { width: 25px; height: 25px; }
+    .notif-empty { padding: 14px; }
+    .notif-caught-up { padding: 22px 14px; }
+
+    .page-header { padding: 18px !important; margin: 0 10px 18px !important; border-radius: var(--r-md); gap: 12px; align-items: center; }
+    .page-header .header-icon { width: 45px; height: 45px; border-radius: var(--r-sm); font-size: 1.2rem; }
+    .page-header h2 { font-size: 1.15rem !important; line-height: 1.25; }
+    .page-header p { font-size: 0.75rem; line-height: 1.4; }
+
+    .stat-card { padding: 14px !important; border-radius: var(--r-sm); gap: 11px; }
+    .stat-card .stat-icon { width: 42px; height: 42px; border-radius: var(--r-sm); font-size: 1.15rem; }
+    .stat-card .stat-val { font-size: 1.35rem; }
+    .stat-card .stat-lbl { font-size: 0.65rem; letter-spacing: 0.03em; }
+
+    .filter-bar { margin: 0 10px 18px !important; padding: 13px !important; flex-direction: column; align-items: stretch !important; gap: 9px !important; border-radius: var(--r-sm); }
+    .filter-bar > * { width: 100% !important; max-width: 100% !important; }
+    .filter-bar .form-control, .filter-bar .form-select { min-height: 42px; width: 100% !important; }
+    .btn-filter, .btn-filter-clear { width: 100% !important; min-height: 42px; }
+    .filter-tabs { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+    .filter-tab { flex: 1 1 auto; text-align: center; padding: 8px 10px; font-size: 0.75rem; }
+
+    .complaint-list { padding: 0 10px; gap: 12px; }
+    .c-card { padding: 15px !important; border-radius: var(--r-md); border-left-width: 4px; }
+    .c-card-header { flex-direction: column; gap: 7px; margin-bottom: 11px; }
+    .c-name { font-size: 0.95rem; line-height: 1.35; }
+    .c-contact { font-size: 0.75rem; overflow-wrap: anywhere; }
+    .c-meta { flex-direction: column; gap: 6px; font-size: 0.78rem; }
+    .c-description { font-size: 0.82rem; line-height: 1.5; padding-left: 9px; }
+    .c-remarks { font-size: 0.78rem; padding: 9px 11px; }
+    .c-photo img { width: 100%; height: auto; max-height: none; }
+
+    .c-actions { display: grid; grid-template-columns: 1fr; gap: 7px; }
+    .c-actions button, .c-actions a { width: 100% !important; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+
+    .modal-dialog { width: calc(100% - 20px) !important; max-width: none !important; margin: 10px auto !important; }
+    .modal-header { padding: 13px 15px; }
+    .modal-body { padding: 15px !important; max-height: 70vh; overflow-y: auto; }
+    .modal-footer { padding: 12px 15px; }
+
+    .empty-state { padding: 40px 15px; }
+    .empty-state i { font-size: 3rem; }
+
+    h4 { font-size: 0.95rem !important; }
+    h4::before { height: 17px; width: 3px; }
+
+    /* Submenu on mobile becomes a normal in-flow full-width block
+       (sb-admin-2's desktop fly-out rule would otherwise pin it
+       to a floating box near the sidebar edge). */
+    .sidebar.toggled .nav-item .collapse,
+    .sidebar.toggled .nav-item .collapsing {
+        position: static !important;
+        left: auto !important; top: auto !important; right: auto !important;
+        z-index: auto !important;
+        width: 100% !important;
+    }
+    .sidebar.toggled .nav-item .collapse-inner {
+        position: static !important;
+        width: calc(100% - 12px) !important;
+        max-width: 100% !important;
+        margin: 6px auto !important;
+        max-height: 60vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .sidebar.toggled .nav-item:hover .collapse:not(.show) { display: none !important; }
+}
+
+@media (max-width: 480px) {
+    .topbar { padding: 0 5px !important; }
+    #sidebarToggleTop { width: 36px; height: 36px; }
+    .topbar .nav-link { padding: 6px !important; }
+
+    .page-header { margin-left: 7px !important; margin-right: 7px !important; padding: 15px !important; }
+    .page-header .header-icon { width: 40px; height: 40px; font-size: 1rem; }
+    .page-header h2 { font-size: 1rem !important; }
+    .page-header p { font-size: 0.7rem; }
+
+    .stat-card { padding: 12px !important; }
+    .stat-card .stat-icon { width: 38px; height: 38px; font-size: 1rem; }
+    .stat-card .stat-val { font-size: 1.2rem; }
+    .stat-card .stat-lbl { font-size: 0.58rem; }
+
+    .filter-bar, .complaint-list { margin-left: 7px !important; margin-right: 7px !important; }
+    .c-card { padding: 13px !important; }
+    .badge-pending, .badge-resolved { font-size: 0.68rem; padding: 4px 8px; }
+
+    .notif-dropdown-menu { top: 58px !important; left: 5px !important; right: 5px !important; border-radius: 14px !important; }
+    .notif-dropdown-header { padding: 12px !important; }
+    .notif-section-title { padding-left: 12px !important; padding-right: 12px !important; }
+    .notif-item { padding-left: 12px !important; padding-right: 12px !important; }
+}
+
+@media (max-width: 360px) {
+    .sidebar, .sidebar.toggled { width: 72vw !important; min-width: 72vw !important; max-width: 260px !important; }
+    .page-header { gap: 9px; }
+    .page-header .header-icon { width: 36px; height: 36px; }
+    .page-header h2 { font-size: 0.92rem !important; }
+    .stat-card { gap: 8px; }
+    .stat-card .stat-icon { width: 34px; height: 34px; }
+    .stat-card .stat-val { font-size: 1.05rem; }
+    .filter-tab { font-size: 0.68rem; padding: 7px 6px; }
+}
+
+</style>
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center" href="admn_dashboard.php">
+                <img src="icons/logo.png" alt="Barangay San Pedro" class="sidebar-brand-logo">
+                <div class="sidebar-brand-text">Administrator<br>Dashboard</div>
+            </a>
+
+            <hr class="sidebar-divider my-0">
+
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link" href="admn_dashboard.php">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="admn_budget.php">
+                    <i class="fas fa-fw fa-wallet"></i>
+                    <span>Budget Transparency</span>
+                </a>
+            </li>
+
+            <hr class="sidebar-divider">
+
+            <!-- ▼ Barangay Records DROPDOWN -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseUserMgmt"
+                    aria-expanded="false" aria-controls="collapseUserMgmt">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Barangay Records</span>
+                </a>
+                <div id="collapseUserMgmt" class="collapse" data-bs-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="admn_staff_crud.php">
+                            <i class="fas fa-user-tie"></i>Barangay Officials/Staffs
+                        </a>
+                        <a class="collapse-item" href="admn_resident_crud.php">
+                            <i class="fas fa-users"></i>Barangay Residents
+                        </a>
+                        <a class="collapse-item" href="admn_resident_pending.php">
+                            <i class="fas fa-user-clock"></i>Pending Registrations
+                        </a>
+                        <a class="collapse-item" href="admn_messages.php">
+                            <i class="bi bi-chat-left-text"></i>Messages
+                        </a>
+                        <a class="collapse-item" href="admn_password_reset_requests.php">
+                            <i class="fas fa-key"></i>Password Reset Requests
+                        </a>
+                    </div>
+                </div>
+            </li>
+
+            <hr class="sidebar-divider">
+
+            <!-- Announcements (flat) -->
+            <li class="nav-item">
+                <a class="nav-link" href="admn_announcement_crud.php">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Announcements</span>
+                </a>
+            </li>
+
+            <!-- ▼ Barangay Services DROPDOWN -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseBarangayServices"
+                    aria-expanded="false" aria-controls="collapseBarangayServices">
+                    <i class="fas fa-landmark"></i>
+                    <span>Barangay Services</span>
+                </a>
+                <div id="collapseBarangayServices" class="collapse" data-bs-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="admn_certofres.php">
+                            <i class="fas fa-file-word"></i>Certificate of Residency
+                        </a>
+                        <a class="collapse-item" href="admn_certofgoodmoral.php">
+                            <i class="fas fa-user-check"></i>Certificate of Good Moral
+                        </a>
+                        <a class="collapse-item" href="admn_certoflivestock.php">
+                            <i class="fas fa-horse"></i>Certificate of Livestock
+                        </a>
+                        <a class="collapse-item" href="admn_certofguardianship.php">
+                            <i class="fas fa-fw fa-people-arrows"></i>Certificate of Guardianship
+                        </a>
+                        <a class="collapse-item" href="admn_soloparent.php">
+                            <i class="fas fa-fw fa-child"></i>Solo Parent Certification
+                        </a>
+                        <a class="collapse-item" href="admn_brgyid.php">
+                            <i class="fas fa-id-card"></i>Barangay ID
+                        </a>
+                        <a class="collapse-item" href="admn_bspermit.php">
+                            <i class="fas fa-file-contract"></i>Business Permit
+                        </a>
+                        <a class="collapse-item" href="admn_brgyclearance.php">
+                            <i class="fas fa-file"></i>Barangay Clearance
+                        </a>
+                        <a class="collapse-item" href="admn_certofindigency.php">
+                            <i class="fas fa-fw fa-table"></i>Certificate of Indigency
+                        </a>
+                        <a class="collapse-item" href="admn_complaints.php">
+                            <i class="bi bi-people-fill"></i>Complaints
+                        </a>
+                    </div>
+                </div>
+            </li>
+
+            <hr class="sidebar-divider">
+
+            <!-- Audit & Logs -->
+            <li class="nav-item">
+                <a class="nav-link" href="admn_activity_logs.php">
+                    <i class="fas fa-history"></i>
+                    <span>Audit &amp; Logs</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="admn_archive.php">
+                    <i class="fas fa-archive"></i>
+                    <span>Archive</span>
+                </a>
+            </li>
+
+            <hr class="sidebar-divider">
+
+            <div class="text-center d-none d-md-inline mt-auto mb-3">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop"
+                        class="btn btn-link d-md-none rounded-circle mr-3"
+                        type="button"
+                        aria-label="Open navigation">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        <!-- Nav Item - Notifications -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle"
+                                href="#"
+                                id="notifDropdown"
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <?php if ($notif_grand_total > 0): ?>
+                                <span class="badge badge-counter"><?= $notif_grand_total > 99 ? '99+' : $notif_grand_total; ?></span>
+                                <?php endif; ?>
+                            </a>
+                            <!-- Dropdown - Notifications -->
+                            <div class="dropdown-menu dropdown-menu-end notif-dropdown-menu shadow animated--grow-in"
+                                aria-labelledby="notifDropdown">
+                                <div class="notif-dropdown-header">
+                                    <p class="notif-header-title"><i class="fas fa-bell"></i> Notifications</p>
+                                    <?php if ($notif_grand_total > 0): ?>
+                                    <span class="notif-header-count"><?= $notif_grand_total ?> new</span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Certificate Requests -->
+                                <div class="notif-section-title">
+                                    <i class="fas fa-file-alt"></i> Barangay Services Requests
+                                    <span class="notif-section-count"><?= $notif_cert_total ?></span>
+                                </div>
+                                <?php if ($notif_cert_total === 0): ?>
+                                    <div class="notif-empty">No new certificate requests</div>
+                                <?php else: foreach ($notif_cert_items as $item): ?>
+                                    <a class="dropdown-item notif-item" href="<?= htmlspecialchars($item['page']) ?>">
+                                        <span class="notif-icon-wrap"><i class="fas <?= htmlspecialchars($item['icon']) ?>"></i></span>
+                                        <span><?= htmlspecialchars($item['label']) ?></span>
+                                        <span class="notif-item-badge"><?= (int)$item['count'] ?> new</span>
+                                    </a>
+                                <?php endforeach; endif; ?>
+
+                                <!-- Messages -->
+                                <div class="notif-section-title">
+                                    <i class="bi bi-chat-left-text"></i> Messages
+                                    <span class="notif-section-count"><?= $notif_msg_total ?></span>
+                                    <?php if ($notif_msg_total > 0): ?>
+                                    <form method="post" action="mark_notification_read.php" class="notif-mark-all-form">
+                                        <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($notif_current_page) ?>">
+                                        <button type="submit" name="mark_all_read" value="1" class="notif-mark-all" title="Mark all messages as read">
+                                            <i class="fas fa-check-double"></i> Mark all read
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if ($notif_msg_total === 0): ?>
+                                    <div class="notif-empty">No new messages</div>
+                                <?php else: foreach ($notif_msg_items as $m):
+                                        $sender = trim(($m['fname'] ?? '') . ' ' . ($m['lname'] ?? ''));
+                                        $sender = $sender !== '' ? $sender : 'Resident';
+                                        $snippet = mb_strimwidth(strip_tags($m['message_text']), 0, 55, '…');
+                                ?>
+                                    <div class="notif-item notif-item-msg">
+                                        <a class="notif-item-link" href="admn_messages.php">
+                                            <span class="notif-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($sender, 0, 1))) ?></span>
+                                            <span>
+                                                <strong><?= htmlspecialchars($sender) ?></strong>: <?= htmlspecialchars($snippet) ?>
+                                                <small class="notif-time"><?= htmlspecialchars(date('M j, Y g:i A', strtotime($m['date_sent']))) ?></small>
+                                            </span>
+                                        </a>
+                                        <form method="post" action="mark_notification_read.php" class="notif-mark-item-form">
+                                            <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($notif_current_page) ?>">
+                                            <input type="hidden" name="mark_read_id" value="<?= (int)$m['id_admin_msg'] ?>">
+                                            <button type="submit" class="notif-mark-item" title="Mark as read">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                                    <a class="dropdown-item notif-viewall" href="admn_messages.php">View all messages <i class="fas fa-arrow-right ms-1"></i></a>
+                                <?php endif; ?>
+
+                                <!-- Pending Requests -->
+                                <div class="notif-section-title">
+                                    <i class="fas fa-user-clock"></i> Pending Requests
+                                    <span class="notif-section-count"><?= $notif_pending_total ?></span>
+                                </div>
+                                <?php if ($notif_pending_total === 0): ?>
+                                    <div class="notif-empty">No new pending requests</div>
+                                <?php else: foreach ($notif_pending_items as $item): ?>
+                                    <a class="dropdown-item notif-item" href="<?= htmlspecialchars($item['page']) ?>">
+                                        <span class="notif-icon-wrap"><i class="fas <?= htmlspecialchars($item['icon']) ?>"></i></span>
+                                        <span><?= htmlspecialchars($item['label']) ?></span>
+                                        <span class="notif-item-badge"><?= (int)$item['count'] ?> new</span>
+                                    </a>
+                                <?php endforeach; endif; ?>
+
+                                <?php if ($notif_grand_total === 0): ?>
+                                    <div class="notif-caught-up">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>You're all caught up</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- User Name -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="javascript:void(0);">
+                                <span class="mr-2 d-none d-lg-inline text-gray-800 small">
+                                    <?= htmlspecialchars($userdetails['surname'] ?? '') ?>,
+                                    <?= htmlspecialchars($userdetails['firstname'] ?? '') ?>
+                                    <?= htmlspecialchars($userdetails['mname'] ?? '') ?>
+                                </span>
+                            </a>
+                        </li>
+
+                        <!-- Logout Icon Only -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-toggle="modal" data-target="#logoutConfirmModal" title="Log out">
+                                <i class="fas fa-sign-out-alt fa-fw"></i>
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- FIX: auto-scroll an opened Barangay Records / Barangay
+                     Services accordion into view inside the fixed mobile
+                     sidebar, so it's never opened off-screen -->
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    ['collapseUserMgmt', 'collapseBarangayServices'].forEach(function (id) {
+                        var panel = document.getElementById(id);
+                        if (!panel) return;
+                        panel.addEventListener('shown.bs.collapse', function () {
+                            var trigger = document.querySelector('[data-bs-target="#' + id + '"]');
+                            if (trigger) {
+                                trigger.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        });
+                    });
+                });
+                </script>
+
+                <!-- FIX: iOS/Android can fire a spurious "click" event on
+                     whatever element sits under your finger when a scroll
+                     gesture ends, even though you only scrolled and never
+                     tapped. Also, the site's own hamburger toggle script
+                     (not shown in this file) may be bound to "touchstart"
+                     instead of "click", which fires the instant a finger
+                     lands on the button — before any scroll movement can
+                     even be measured. To fix both at once, this: (1) waits
+                     for the page to fully load, so any other script has
+                     already attached its listeners, (2) clones the
+                     hamburger button, which strips every JS listener
+                     previously bound to it — regardless of which event
+                     they used, (3) attaches one clean tap-only handler
+                     that opens the sidebar, and only if the touch was a
+                     genuine tap (little to no finger movement), not a
+                     scroll. -->
+                <script>
+                window.addEventListener('load', function () {
+                    var touchStartX = 0, touchStartY = 0, wasScrollGesture = false;
+
+                    document.addEventListener('touchstart', function (e) {
+                        if (!e.touches || !e.touches.length) return;
+                        touchStartX = e.touches[0].clientX;
+                        touchStartY = e.touches[0].clientY;
+                        wasScrollGesture = false;
+                    }, { passive: true, capture: true });
+
+                    document.addEventListener('touchmove', function (e) {
+                        if (!e.touches || !e.touches.length) return;
+                        var dx = Math.abs(e.touches[0].clientX - touchStartX);
+                        var dy = Math.abs(e.touches[0].clientY - touchStartY);
+                        if (dx > 10 || dy > 10) {
+                            wasScrollGesture = true;
+                        }
+                    }, { passive: true, capture: true });
+
+                    // Any click that follows real finger movement never
+                    // reaches anything else, no matter what fired it.
+                    document.addEventListener('click', function (e) {
+                        if (wasScrollGesture) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            wasScrollGesture = false;
+                        }
+                    }, true);
+
+                    // Strip and rebind both possible toggle buttons so no
+                    // stray touchstart/click/mousedown handler from
+                    // elsewhere can open the sidebar on its own.
+                    ['sidebarToggleTop', 'sidebarToggle'].forEach(function (id) {
+                        var el = document.getElementById(id);
+                        if (!el) return;
+                        var fresh = el.cloneNode(true);
+                        el.parentNode.replaceChild(fresh, el);
+                        fresh.addEventListener('click', function (e) {
+                            if (wasScrollGesture) return; // ignore scroll-end taps
+                            e.preventDefault();
+                            var sidebar = document.querySelector('.sidebar');
+                            if (sidebar) sidebar.classList.toggle('toggled');
+                        });
+                    });
+                });
+                </script>
+
+                <!-- FIX: tapping/clicking anywhere outside the open mobile
+                     sidebar closes it. -->
+                <script>
+                document.addEventListener('click', function (e) {
+                    if (window.innerWidth > 767.98) return; // desktop/tablet unaffected
+
+                    var sidebar = document.querySelector('.sidebar');
+                    var toggleBtn = document.getElementById('sidebarToggleTop');
+                    if (!sidebar || !sidebar.classList.contains('toggled')) return;
+
+                    var clickedInsideSidebar = sidebar.contains(e.target);
+                    var clickedToggleBtn = toggleBtn && toggleBtn.contains(e.target);
+
+                    if (!clickedInsideSidebar && !clickedToggleBtn) {
+                        sidebar.classList.remove('toggled');
+                    }
+                }, true);
+                </script>

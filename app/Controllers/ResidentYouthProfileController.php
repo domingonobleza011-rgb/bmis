@@ -10,14 +10,15 @@ require_once(ROOT_PATH . '/classes/conn.php');
 $userdetails = $bmis->get_userdata();
 $id_resident = $userdetails['id_resident'] ?? 0;
 
-// ── AGE GATE: block residents aged 60+ from youth profiling ──────────────────
+// ── AGE GATE: youth profiling is for residents aged 13 to 59 ──────────────────
 $_age_for_gate = 0;
 if (!empty($userdetails['bdate'])) {
     $_age_for_gate = (new DateTime())->diff(new DateTime($userdetails['bdate']))->y;
 } elseif (!empty($userdetails['age'])) {
     $_age_for_gate = (int)$userdetails['age'];
 }
-if ($_age_for_gate >= 60) {
+$_age_known = !empty($userdetails['bdate']) || !empty($userdetails['age']);
+if ($_age_for_gate >= 60 || ($_age_known && $_age_for_gate < 13)) {
     echo "<!DOCTYPE html><html><head>
         <meta charset='UTF-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
@@ -28,7 +29,7 @@ if ($_age_for_gate >= 60) {
         <div class='text-center p-4' style='max-width:420px;'>
             <div style='font-size:4rem;'>&#x1F9D3;</div>
             <h4 class='fw-bold mt-3'>Not Eligible for Youth Profiling</h4>
-            <p class='text-muted'>Youth profiling is only available for residents <strong>below 60 years old</strong>.
+            <p class='text-muted'>Youth profiling is only available for residents <strong>aged 13 to 59</strong>.
             Based on your birthdate, your current age is <strong>{$_age_for_gate}</strong>.</p>
             <a href='resident_homepage.php' class='btn btn-primary rounded-pill px-4'>
                 <i class='bi bi-house-door-fill me-1'></i> Back to Home
@@ -38,20 +39,33 @@ if ($_age_for_gate >= 60) {
     exit();
 }
 
+// Registered profiles can be edited (nothing required) via update_youth_profile().
+$bmis->update_youth_photo();
+$bmis->update_youth_profile();
+$photo_msg = $_GET['photo'] ?? '';
+
 $bmis->create_youth();
 
 // ── RESOLVE YOUTH ID FIRST ───────────────────────────────────────────────────
 $youth_id_resolved  = null;
 $existing_youth_photo = null;
 $youth_profile_incomplete = false;
-$ry = $conn->prepare("SELECT id_youth, photo, civil_status FROM tbl_youth WHERE id_youth = ? LIMIT 1");
+$ry = $conn->prepare("SELECT * FROM tbl_youth WHERE id_youth = ? LIMIT 1");
 $ry->execute([$id_resident]);
 $ry_row = $ry->fetch(PDO::FETCH_ASSOC);
+$youth_data = $ry_row ?: [];
 if ($ry_row) {
     $youth_id_resolved     = (int)$ry_row['id_youth'];
     $existing_youth_photo  = $ry_row['photo'] ?? null;
-    $youth_profile_incomplete = empty($ry_row['civil_status']);
 }
+// Not registered yet = no youth row at all, or a bare auto-created row.
+$youth_profile_incomplete = !$ry_row || empty($ry_row['civil_status']);
+
+// Resident record (birthdate, contact, address...) — shown alongside the
+// youth profile once it's registered, and used to pre-fill the form.
+$rr = $conn->prepare("SELECT * FROM tbl_resident WHERE id_resident = ? LIMIT 1");
+$rr->execute([$id_resident]);
+$resident_row = $rr->fetch(PDO::FETCH_ASSOC) ?: [];
 
 // ── ENROLL IN PROGRAM ────────────────────────────────────────────────────────
 if (isset($_POST['enroll_program'])) {

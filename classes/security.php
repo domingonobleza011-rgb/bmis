@@ -64,7 +64,9 @@ function bmis_require_login(): array {
 
 function bmis_require_admin(): array {
     $u = bmis_require_login();
-    if ($u['role'] !== 'administrator' && $u['role'] !== 'Admin') {
+    // Staff (role 'user', except SK Chairperson) have the same access as admins.
+    $is_staff = ($u['role'] === 'user') && (($u['position'] ?? '') !== 'Sk Chairperson');
+    if ($u['role'] !== 'administrator' && $u['role'] !== 'Admin' && !$is_staff) {
         http_response_code(403);
         die('Access denied.');
     }
@@ -95,7 +97,10 @@ function bmis_require_admin_dashboard(): array {
 
     $is_allowed_position = in_array($u['position'] ?? '', $admin_dashboard_positions, true);
 
-    if (!$is_admin_role && !$is_allowed_position) {
+    // Any staff account (role 'user') except SK Chairperson gets admin access.
+    $is_staff_role = ($u['role'] === 'user') && (($u['position'] ?? '') !== 'Sk Chairperson');
+
+    if (!$is_admin_role && !$is_allowed_position && !$is_staff_role) {
         http_response_code(403);
         die('Access denied.');
     }
@@ -122,19 +127,24 @@ function bmis_require_resident(): array {
 }
 
 // ─── 4b. Youth Profile Gate ──────────────────────────────────────────────────
-// Residents below 30 are auto-enrolled into SK youth membership the moment
-// their registration is approved (see approve_pending_resident() in
-// resident.class.php) — a bare tbl_youth row is created for them with only
-// lname/fname/mi/age/sex filled in. The rest of their youth profile
-// (civil status, education, employment, skills) stays blank until the
-// resident fills it in themselves via resident_youth_profile.php.
+// Youth registration is NOT automatic. Approving a resident does not create
+// any tbl_youth row. A resident whose age falls in the youth range must
+// register in the Youth Portal (resident_youth_profile.php) themselves as the
+// first thing they do after their account is approved. Once registered, the
+// profile is view-only; only the photo can be changed.
 //
 // This gate checks, on every resident-portal page load, whether the logged
-// in resident has such an incomplete youth profile and — if so — forces
-// them to resident_youth_profile.php before they can use anything else in
-// the portal. It fails open (never blocks the page) if the DB lookup
+// in resident is in the youth age range and has not registered yet (no
+// tbl_youth row, or a legacy bare row with an empty civil_status) and, if so,
+// forces them to resident_youth_profile.php before they can use anything else
+// in the portal. It fails open (never blocks the page) if the DB lookup
 // itself has a problem, so a connection hiccup here can't take down the
 // whole resident portal.
+// Youth profiling applies to residents aged 13 and above (up to, but not
+// including, 60 — the same cap resident_youth_profile.php already enforced).
+if (!defined('BMIS_YOUTH_MIN_AGE')) { define('BMIS_YOUTH_MIN_AGE', 15); }
+if (!defined('BMIS_YOUTH_MAX_AGE')) { define('BMIS_YOUTH_MAX_AGE', 30); }
+
 function bmis_enforce_youth_profile_gate(array $userdetails): void {
     static $already_checked = false;
     if ($already_checked) {
@@ -170,7 +180,9 @@ function bmis_enforce_youth_profile_gate(array $userdetails): void {
     } elseif (!empty($userdetails['age'])) {
         $age = (int)$userdetails['age'];
     }
-    if ($age !== null && $age >= 60) {
+    // Only residents aged 13 and above (and below the 60 cap) are asked to
+    // register. Unknown age or younger than 13 → not eligible, never blocked.
+    if ($age === null || $age < BMIS_YOUTH_MIN_AGE || $age >= BMIS_YOUTH_MAX_AGE) {
         return;
     }
 
@@ -189,10 +201,10 @@ function bmis_enforce_youth_profile_gate(array $userdetails): void {
         return; // fail open — a DB hiccup here should not lock residents out of the whole portal
     }
 
-    // A tbl_youth row exists (auto-created on approval for under-30s) but
-    // civil_status — a required field on the youth profile form — is still
-    // empty, meaning the resident hasn't submitted their profile yet.
-    if ($row && empty($row['civil_status'])) {
+    // No tbl_youth row at all (the normal case now), or a legacy bare row
+    // whose civil_status, a required field on the registration form, is still
+    // empty: the resident hasn't registered their youth profile yet.
+    if (!$row || empty($row['civil_status'])) {
         header('Location: resident_youth_profile.php?complete_profile=1');
         exit();
     }
@@ -348,4 +360,52 @@ header("Content-Security-Policy: default-src 'self'; "
     // without the request ever reaching the server's login check above.
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
+}
+
+
+// ─── 9. Resident Profile Photo helpers ──────────────────────────────────────
+// Photos live in uploads/profile_photos/ (script execution disabled by the
+// .htaccess in that folder). Only the random filename is stored in the DB
+// (tbl_resident.profile_photo / tbl_resident_pending.profile_photo).
+function bmis_profile_photo_dir(): string {
+    $base = defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__);
+    return $base . '/uploads/profile_photos/';
+}
+
+/** Validate + store an uploaded profile photo. Returns ['ok'=>bool,'filename'=>?string,'msg'=>string] */
+function bmis_save_profile_photo(array $file): array {
+    $v = bmis_validate_image_upload($file, false); // images only, content-sniffed, 5 MB cap
+    if (!$v['ok']) return ['ok' => false, 'filename' => null, 'msg' => $v['msg']];
+
+    $dir = bmis_profile_photo_dir();
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+        return ['ok' => false, 'filename' => null, 'msg' => 'Could not create the photo folder.'];
+    }
+    $filename = 'p_' . $v['safe_name'];
+    if (!move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+        return ['ok' => false, 'filename' => null, 'msg' => 'Photo upload failed. Please try again.'];
+    }
+    return ['ok' => true, 'filename' => $filename, 'msg' => ''];
+}
+
+function bmis_delete_profile_photo(?string $filename): void {
+    $filename = basename(trim((string)$filename)); // no path tricks
+    if ($filename === '') return;
+    $path = bmis_profile_photo_dir() . $filename;
+    if (is_file($path)) @unlink($path);
+}
+
+/** Web path for <img src>, or '' when there is no (existing) photo. */
+function bmis_profile_photo_url($filename): string {
+    $filename = basename(trim((string)$filename));
+    if ($filename === '' || !is_file(bmis_profile_photo_dir() . $filename)) return '';
+    return 'uploads/profile_photos/' . rawurlencode($filename);
+}
+
+/** Inner HTML for an avatar circle: the photo if present, else the initial. */
+function bmis_avatar_inner($filename, string $initial): string {
+    $url = bmis_profile_photo_url($filename);
+    if ($url === '') return $initial;
+    return '<img src="' . htmlspecialchars($url) . '" alt="" loading="lazy" '
+         . 'style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">';
 }

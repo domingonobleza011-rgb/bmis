@@ -1,7 +1,31 @@
+<?php
+// Turn http(s):// and www. links in a post into tappable links (safe: text is escaped first)
+if (!function_exists('sk_linkify')) {
+    function sk_linkify($text) {
+        $safe = htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
+        $safe = preg_replace_callback(
+            '~(?<![\w@/])((?:https?://|www\.)[^\s<]+)~iu',
+            function ($m) {
+                $url = $m[1]; $trail = '';
+                // keep trailing punctuation outside the link
+                while ($url !== '' && preg_match('~[.,;:!?)\]\'"]$|&quot;$|&#0?39;$~', $url)) {
+                    if (preg_match('~(&quot;|&#0?39;)$~', $url, $q)) { $trail = $q[1] . $trail; $url = substr($url, 0, -strlen($q[1])); }
+                    else { $trail = substr($url, -1) . $trail; $url = substr($url, 0, -1); }
+                }
+                if ($url === '') return $m[0];
+                $href = preg_match('~^https?://~i', $url) ? $url : 'https://' . $url;
+                return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer" class="post-link">' . $url . '</a>' . $trail;
+            },
+            $safe
+        );
+        return nl2br($safe);
+    }
+}
+?>
 
 <?php include(ROOT_PATH . '/dashboard_sidebar_start_sk.php'); ?>
 <style>
-:root { --sk:#1a6b3a;--gold:#c9943a;--sk-pale:#e8f5ed;--gold-pale:#fdf3e3; }
+:root { --sk:#1a4480;--gold:#c9943a;--sk-pale:#e8eef8;--gold-pale:#fdf3e3; }
 .page-header { background:linear-gradient(135deg,#1a6b3a,#2dab5f);color:#fff;border-radius:16px;padding:26px 30px;margin-bottom:24px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 24px rgba(26,107,58,.2); }
 .page-header .hdr-icon { width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0; }
 .page-header h2 { margin:0;font-size:1.5rem;font-weight:700; }
@@ -19,7 +43,7 @@
 .type-achievement   { background:#f0eafe;color:#6200ea; }
 .type-general       { background:#f0f4f8;color:#555; }
 .post-title { font-size:1.1rem;font-weight:700;color:#1a6b3a;margin-bottom:8px;line-height:1.4; }
-.post-content { font-size:.9rem;color:#444;line-height:1.65;margin-bottom:12px; }
+.post-content { overflow-wrap:anywhere; font-size:.9rem;color:#444;line-height:1.65;margin-bottom:12px; }
 .post-meta { font-size:.76rem;color:#999;display:flex;flex-wrap:wrap;gap:10px; }
 .post-meta span { display:flex;align-items:center;gap:4px; }
 .post-actions { display:flex;gap:8px;margin-top:14px;flex-wrap:wrap; }
@@ -40,6 +64,15 @@
 .modal-header { background:#1a6b3a;color:#fff;border-radius:12px 12px 0 0; }
 .modal-header .btn-close { filter:invert(1); }
 .alert-success-custom { background:#e8f5ed;color:#1a6b3a;border:1.5px solid #1a6b3a;border-radius:10px;padding:10px 18px;font-size:.875rem;font-weight:600;margin-bottom:16px; }
+.post-content a.post-link { color:#1967d2;text-decoration:underline;word-break:break-all;cursor:pointer; }
+.post-content a.post-link:hover { color:#0f2d5a; }
+.post-head { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px; }
+.post-head .post-type-badge { margin-bottom:0; }
+.post-head .dots-btn { margin:-6px -6px -6px 0; }
+.dots-btn { width:40px;height:40px;border:0;border-radius:50%;background:#eef2f8;color:#1a4480;display:inline-flex;align-items:center;justify-content:center;font-size:1rem; }
+.dots-btn:active, .dots-btn[aria-expanded="true"] { background:#1a4480;color:#fff; }
+.sk-dots .dropdown-menu { min-width:150px;border-radius:12px;padding:6px; }
+.sk-dots .dropdown-item { border-radius:8px;padding:10px 12px;font-size:.9rem; }
 </style>
 
 <div class="container-fluid">
@@ -83,9 +116,19 @@
     <div class="col-md-6 col-xl-4">
         <div class="post-card <?= $post['is_pinned']?'pinned':'' ?>">
             <?php if ($post['is_pinned']): ?><div class="pinned-ribbon"><i class="fas fa-thumbtack me-1"></i>Pinned</div><?php endif; ?>
-            <span class="post-type-badge <?= $tc ?>"><?= htmlspecialchars($post['post_type']) ?></span>
+            <div class="post-head">
+                <span class="post-type-badge <?= $tc ?>"><?= htmlspecialchars($post['post_type']) ?></span>
+                <div class="dropdown d-md-none sk-dots">
+                    <button type="button" class="dots-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions"><i class="fas fa-ellipsis-v"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><button type="button" class="dropdown-item" onclick="skPostAct(this,'.edit-btn')"><i class="fas fa-edit fa-fw me-2"></i>Edit</button></li>
+                        <li><button type="button" class="dropdown-item" onclick="skPostAct(this,'[name=toggle_pin]')"><i class="fas fa-thumbtack fa-fw me-2"></i><?= $post['is_pinned']?'Unpin':'Pin' ?></button></li>
+                        <li><button type="button" class="dropdown-item text-danger" onclick="skPostAct(this,'.del-btn')"><i class="fas fa-trash fa-fw me-2"></i>Delete</button></li>
+                    </ul>
+                </div>
+            </div>
             <div class="post-title"><?= htmlspecialchars($post['post_title']) ?></div>
-            <div class="post-content"><?= nl2br(htmlspecialchars($post['post_content'])) ?></div>
+            <div class="post-content"><?= sk_linkify($post['post_content']) ?></div>
             <div class="post-meta">
                 <span><i class="fas fa-user"></i><?= htmlspecialchars($post['posted_by']) ?></span>
                 <span><i class="fas fa-calendar"></i><?= date('M d, Y', strtotime($post['date_posted'])) ?></span>
@@ -119,6 +162,12 @@
     <?php endif; ?>
 </div>
 
+<script>
+function skPostAct(item, sel) {   // reuse the existing Edit / Pin / Delete controls of this card
+    var box = item.closest('.post-card'), b = box && box.querySelector('.post-actions ' + sel);
+    if (b) b.click();
+}
+</script>
 <!-- Add Post Modal -->
 <div class="modal fade" id="addPostModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -199,7 +248,6 @@
     </div>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('editPostModal').addEventListener('show.bs.modal', function(e) {
     const b = e.relatedTarget;

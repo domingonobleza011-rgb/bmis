@@ -49,23 +49,7 @@
         <div class="col-md-1"></div>
         <div class="col-md-10">
             <div class="table-responsive">
-            <table class="table table-hover text-center table-bordered" style="min-width: 1000px;">
-                <thead style="background-color:#6f42c1; color:#fff;">
-                    <tr>
-                        <th>#</th>
-                        <th>Surname</th>
-                        <th>First Name</th>
-                        <th>Middle Name</th>
-                        <th>Sex</th>
-                        <th>Civil Status</th>
-                        <th>House No.</th>
-                        <th>Street</th>
-                        <th>Barangay</th>
-                        <th>Municipality</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
+            <?php
                     require_once ROOT_PATH . '/pagination_helper.php';
                     $page    = max(1, (int)($_GET['page'] ?? 1));
                     $perPage = 10;
@@ -93,29 +77,8 @@
                     }
                     $paged = ['rows' => $rows, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'last_page' => (int)ceil($total / $perPage)];
 
-                    if (count($rows) > 0) {
-                        $i = ($page - 1) * $perPage + 1;
-                        foreach ($rows as $row) { ?>
-                            <tr>
-                                <td><?= $i++ ?></td>
-                                <td><?= htmlspecialchars($row['lname']) ?></td>
-                                <td><?= htmlspecialchars($row['fname']) ?></td>
-                                <td><?= htmlspecialchars($row['mi']) ?></td>
-                                <td><?= htmlspecialchars($row['sex']) ?></td>
-                                <td><?= htmlspecialchars($row['status']) ?></td>
-                                <td><?= htmlspecialchars($row['houseno']) ?></td>
-                                <td><?= htmlspecialchars($row['street']) ?></td>
-                                <td><?= htmlspecialchars($row['brgy']) ?></td>
-                                <td><?= htmlspecialchars($row['municipal']) ?></td>
-                                
-                            </tr>
-                        <?php }
-                    } else { ?>
-                        <tr><td colspan="11" class="text-muted py-3">No PWD residents found.</td></tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-            <?php render_pagination($paged); ?>
+                    $res_empty_text = 'No PWD residents found.'; require ROOT_PATH . '/app/Views/resident_cards_partial.php';
+                ?>
             </div>
         </div>
         <div class="col-md-1"></div>

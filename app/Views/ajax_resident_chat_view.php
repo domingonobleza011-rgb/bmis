@@ -1,4 +1,8 @@
 
+    <?php
+ob_start();
+if (empty($all_messages)):
+?>
     <div class="chat-empty">
         <i class="bi bi-chat-dots" style="font-size:2.5rem; margin-bottom:10px;"></i>
         <div class="fw-semibold">No messages yet</div>

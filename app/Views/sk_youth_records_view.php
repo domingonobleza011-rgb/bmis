@@ -1,7 +1,7 @@
 
 <?php include(ROOT_PATH . '/dashboard_sidebar_start_sk.php'); ?>
 <style>
-:root { --sk: #1a4480; --gold: #c9943a; --sk-pale: #e8f5ed; --gold-pale: #fdf3e3; }
+:root { --sk: #1a4480; --gold: #c9943a; --sk-pale: #e8eef8; --gold-pale: #fdf3e3; }
 .page-header { background: linear-gradient(135deg,#1a4480,#2b5ea7); color:#fff; border-radius:16px; padding:26px 30px; margin-bottom:24px; display:flex; align-items:center; gap:16px; box-shadow:0 6px 24px rgba(26,107,58,0.2); }
 .page-header .hdr-icon { width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0; }
 .page-header h2 { margin:0;font-size:1.5rem;font-weight:700; }
@@ -20,6 +20,17 @@
 .table thead th { background:#f4f7fb;color:#1a6b3a;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;border-bottom:2px solid #e8ecf0; }
 .table td { font-size:.875rem;vertical-align:middle;border-bottom:1px solid #f0f4f8; }
 .action-btn { border:none;border-radius:7px;padding:5px 12px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s; }
+.dots-btn { width:40px;height:40px;border:0;border-radius:50%;background:#eef2f8;color:#1a4480;display:inline-flex;align-items:center;justify-content:center;font-size:1rem; }
+.dots-btn:active, .dots-btn[aria-expanded="true"] { background:#1a4480;color:#fff; }
+.sk-dots .dropdown-menu { min-width:150px;border-radius:12px;padding:6px; }
+.sk-dots .dropdown-item { border-radius:8px;padding:10px 12px;font-size:.9rem; }
+.sk-pager { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid #eef1f4; }
+.sk-pager-info { color:#6b7a90; }
+.sk-pager .page-link { color:#1a4480; min-width:36px; text-align:center; }
+.sk-pager .page-item.active .page-link { background:#1a4480; border-color:#1a4480; color:#fff; }
+@media (max-width:575.98px) { .sk-pager { flex-direction:column; align-items:center; } .sk-pager .page-link { min-width:40px; padding:8px 10px; } }
+.view-btn { background:#e8f5ed;color:#1a6b3a; }
+.view-btn:hover { background:#1a6b3a;color:#fff; }
 .edit-btn { background:#e8f0fe;color:#1967d2; }
 .edit-btn:hover { background:#1967d2;color:#fff; }
 .del-btn { background:#fde8e8;color:#c0392b; }
@@ -111,6 +122,12 @@ table tbody tr td:first-child {
     </div>
     <?php endif; ?>
 
+    <?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger py-2" style="border-radius:10px;font-size:.875rem;font-weight:600;"><i class="fas fa-exclamation-circle me-2"></i>
+        <?= ['age'=>'Only residents aged 15–29 can be added as youth.','exists'=>'That resident is already registered as youth.'][$_GET['error']] ?? 'Could not add the youth. Please select a resident and fill in all required fields.' ?>
+    </div>
+    <?php endif; ?>
+
     <div class="panel mb-3">
     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
         <form method="GET" class="d-flex gap-2 flex-wrap align-items-center">
@@ -120,6 +137,9 @@ table tbody tr td:first-child {
         </form>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span style="font-size:.82rem;color:#888;">Showing <strong><?= $total ?></strong> record(s)</span>
+            <button type="button" class="btn-sk btn btn-sm" data-bs-toggle="modal" data-bs-target="#addYouthModal">
+                <i class="fas fa-user-plus me-1"></i> Add Youth
+            </button>
             <button type="button" id="selectAllBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
                 <i class="fas fa-check-square me-1"></i> Select All
             </button>
@@ -134,7 +154,7 @@ table tbody tr td:first-child {
     <div class="panel">
     <form method="POST" id="bulkForm">
     <div class="table-responsive">
-        <table class="table table-hover">
+        <table class="table table-hover sk-youth-table">
             <thead>
                 <tr>
                     <th style="width:40px;">
@@ -179,6 +199,29 @@ table tbody tr td:first-child {
                 </td>
                 <td><?= htmlspecialchars($y['skill_name']) ?></td>
                 <td>
+                    <!-- Mobile: three-dots menu (the buttons below are hidden on phones and triggered from here) -->
+                    <div class="dropdown d-md-none sk-dots">
+                        <button type="button" class="dots-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions"><i class="fas fa-ellipsis-v"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><button type="button" class="dropdown-item" onclick="skRowAct(this,'.view-btn')"><i class="fas fa-eye fa-fw me-2"></i>View</button></li>
+                            <li><button type="button" class="dropdown-item" onclick="skRowAct(this,'.edit-btn')"><i class="fas fa-edit fa-fw me-2"></i>Edit</button></li>
+                            <li><button type="button" class="dropdown-item text-danger" onclick="skRowAct(this,'.del-btn')"><i class="fas fa-trash fa-fw me-2"></i>Delete</button></li>
+                        </ul>
+                    </div>
+                    <button type="button" class="action-btn view-btn me-1 d-md-none"
+                        data-bs-toggle="modal" data-bs-target="#viewYouthModal"
+                        data-name="<?= htmlspecialchars($y['lname'].', '.$y['fname'].' '.$y['mi'],ENT_QUOTES) ?>"
+                        data-age="<?= htmlspecialchars($y['age'],ENT_QUOTES) ?>"
+                        data-sex="<?= htmlspecialchars($y['sex'],ENT_QUOTES) ?>"
+                        data-civil="<?= htmlspecialchars($y['civil_status'],ENT_QUOTES) ?>"
+                        data-email="<?= htmlspecialchars($y['email_address'],ENT_QUOTES) ?>"
+                        data-educ="<?= htmlspecialchars($y['educ_attain'],ENT_QUOTES) ?>"
+                        data-emp="<?= htmlspecialchars($y['emp_status'],ENT_QUOTES) ?>"
+                        data-skill="<?= htmlspecialchars($y['skill_name'],ENT_QUOTES) ?>"
+                        data-id="<?= (int)$y['id_youth'] ?>"
+                        data-photo="<?= $y['photo'] ? 'uploads/youth_photos/'.htmlspecialchars($y['photo'],ENT_QUOTES) : '' ?>"
+                        onclick="fillViewYouth(this)"
+                    ><i class="fas fa-eye"></i> View</button>
                     <button type="button" class="action-btn edit-btn me-1"
                         data-bs-toggle="modal" data-bs-target="#editModal"
                         data-id="<?= $y['id_youth'] ?>"
@@ -206,7 +249,105 @@ table tbody tr td:first-child {
         </table>
       </div>
     </form>
+
+    <?php if (($total_pages ?? 1) > 1):
+        $qs = $_GET; unset($qs['page']);
+        $pg_url = function ($n) use ($qs) { return htmlspecialchars('sk_youth_records.php?' . http_build_query($qs + ['page' => $n])); };
+        $from = ($page - 1) * $per_page + 1;
+        $to   = min($total, $page * $per_page);
+        $start = max(1, $page - 1); $end = min($total_pages, $page + 1);
+    ?>
+    <div class="sk-pager">
+        <small class="sk-pager-info">Showing <strong><?= $from ?></strong>–<strong><?= $to ?></strong> of <strong><?= $total ?></strong></small>
+        <nav aria-label="Youth records pages">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="<?= $pg_url($page - 1) ?>" aria-label="Previous">&laquo;</a></li>
+                <?php if ($start > 1): ?>
+                    <li class="page-item"><a class="page-link" href="<?= $pg_url(1) ?>">1</a></li>
+                    <?php if ($start > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                <?php endif; ?>
+                <?php for ($i = $start; $i <= $end; $i++): ?>
+                    <li class="page-item <?= $i === $page ? 'active' : '' ?>"><a class="page-link" href="<?= $pg_url($i) ?>"><?= $i ?></a></li>
+                <?php endfor; ?>
+                <?php if ($end < $total_pages): ?>
+                    <?php if ($end < $total_pages - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                    <li class="page-item"><a class="page-link" href="<?= $pg_url($total_pages) ?>"><?= $total_pages ?></a></li>
+                <?php endif; ?>
+                <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>"><a class="page-link" href="<?= $pg_url($page + 1) ?>" aria-label="Next">&raquo;</a></li>
+            </ul>
+        </nav>
     </div>
+    <?php endif; ?>
+    </div>
+</div>
+
+<!-- Add Youth Modal -->
+<div class="modal fade" id="addYouthModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Add Youth Member</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" enctype="multipart/form-data">
+      <div class="modal-body">
+        <input type="hidden" name="add_mode" id="add_mode" value="resident">
+        <ul class="nav nav-pills mb-3" style="gap:6px;">
+            <li class="nav-item"><button type="button" class="btn btn-sm btn-outline-secondary active" id="modeResBtn" onclick="setAddMode('resident')"><i class="fas fa-id-card me-1"></i> Existing resident</button></li>
+            <li class="nav-item"><button type="button" class="btn btn-sm btn-outline-secondary" id="modeWalkBtn" onclick="setAddMode('walkin')"><i class="fas fa-user-plus me-1"></i> No account (walk-in)</button></li>
+        </ul>
+        <div class="row g-3">
+            <!-- Existing resident -->
+            <div class="col-12 mode-resident">
+                <?php if (empty($eligible_residents)): ?>
+                <div class="text-muted small">No eligible residents found (aged 15–29 and not yet registered). Use “No account (walk-in)” instead.</div>
+                <?php else: ?>
+                <label class="form-label fw-semibold">Resident <span class="text-danger">*</span></label>
+                <input type="text" id="add_res_filter" class="form-control mb-2" placeholder="Type to filter residents by name…" autocomplete="off">
+                <select name="id_resident" id="add_res" class="form-select" size="6">
+                    <?php foreach ($eligible_residents as $r): ?>
+                    <option value="<?= (int)$r['id_resident'] ?>"
+                        data-sex="<?= htmlspecialchars($r['sex'] ?? '', ENT_QUOTES) ?>"
+                        data-age="<?= (int)$r['calc_age'] ?>"
+                        data-email="<?= htmlspecialchars($r['email'] ?? '', ENT_QUOTES) ?>">
+                        <?= htmlspecialchars($r['lname'] . ', ' . $r['fname'] . ' ' . ($r['mi'] ?? '')) ?> — <?= (int)$r['calc_age'] ?> yrs
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-text">Name, sex and age are taken from the resident record.</div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-3 mode-resident"><label class="form-label fw-semibold">Age</label><input id="add_age" class="form-control" readonly tabindex="-1" style="background:#f4f7fb;"></div>
+            <div class="col-md-3 mode-resident"><label class="form-label fw-semibold">Sex</label><input id="add_sex" class="form-control" readonly tabindex="-1" style="background:#f4f7fb;"></div>
+
+            <!-- Walk-in (no account) -->
+            <div class="col-md-4 mode-walkin d-none"><label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label><input name="w_lname" class="form-control w-field" required disabled></div>
+            <div class="col-md-4 mode-walkin d-none"><label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label><input name="w_fname" class="form-control w-field" required disabled></div>
+            <div class="col-md-4 mode-walkin d-none"><label class="form-label fw-semibold">Middle Initial</label><input name="w_mi" class="form-control w-field" maxlength="5" disabled></div>
+            <div class="col-md-6 mode-walkin d-none"><label class="form-label fw-semibold">Birthdate <span class="text-danger">*</span></label><input type="date" name="w_bdate" class="form-control w-field" max="<?= date('Y-m-d') ?>" required disabled><div class="form-text">Must be aged 15–29.</div></div>
+            <div class="col-md-6 mode-walkin d-none"><label class="form-label fw-semibold">Sex <span class="text-danger">*</span></label>
+                <select name="w_sex" class="form-select w-field" required disabled><option value="">--</option><option>Male</option><option>Female</option></select>
+            </div>
+
+            <div class="col-md-6"><label class="form-label fw-semibold">Civil Status <span class="text-danger">*</span></label>
+                <select name="civil_status" class="form-select" required><option value="">--</option><option>Single</option><option>Married</option><option>Solo Parent</option><option>Widowed</option></select>
+            </div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Email Address</label><input name="email_address" id="add_email" type="email" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Educational Attainment</label><input name="educ_attain" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Employment Status <span class="text-danger">*</span></label>
+                <select name="emp_status" class="form-select" required><option value="">--</option><option>Employed</option><option>Unemployed</option><option>Self-Employed</option><option>Student</option></select>
+            </div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Skills</label><input name="skill_name" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Photo <small class="text-muted fw-normal">(optional)</small></label><input type="file" name="photo" accept="image/*" class="form-control"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" name="add_youth" class="btn-sk btn"><i class="fas fa-save me-1"></i> Add Youth</button>
+      </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Edit Modal -->
@@ -224,7 +365,7 @@ table tbody tr td:first-child {
             <div class="col-md-4"><label class="form-label fw-semibold">Last Name</label><input name="lname" id="edit_lname" class="form-control" required></div>
             <div class="col-md-4"><label class="form-label fw-semibold">First Name</label><input name="fname" id="edit_fname" class="form-control" required></div>
             <div class="col-md-4"><label class="form-label fw-semibold">Middle Initial</label><input name="mi" id="edit_mi" class="form-control" maxlength="5"></div>
-            <div class="col-md-3"><label class="form-label fw-semibold">Age <small class="text-muted fw-normal">(from birthdate)</small></label><input id="edit_age" class="form-control" type="number" readonly tabindex="-1" style="background:#f4f7fb;"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Age <small class="text-muted fw-normal">(from birthdate)</small></label><input name="age" id="edit_age" class="form-control" type="number" min="15" max="29" readonly tabindex="-1" style="background:#f4f7fb;"></div>
             <div class="col-md-3"><label class="form-label fw-semibold">Sex</label>
                 <select name="sex" id="edit_sex" class="form-select" required><option value="">--</option><option>Male</option><option>Female</option></select>
             </div>
@@ -291,6 +432,56 @@ table tbody tr td:first-child {
     </div>
   </div>
 </div>
+<!-- View Youth Details Modal (used on mobile where the table only shows name + actions) -->
+<div class="modal fade" id="viewYouthModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user me-2"></i>Youth Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-3">
+          <img id="vy_photo" src="" alt="" class="rounded-circle d-none" style="width:96px;height:96px;object-fit:cover;border:2px solid #e8ecf0;">
+          <div id="vy_name" class="fw-bold mt-2" style="font-size:1.05rem;"></div>
+        </div>
+        <dl class="vy-list mb-0">
+          <div><dt>ID</dt><dd id="vy_id"></dd></div>
+          <div><dt>Age</dt><dd id="vy_age"></dd></div>
+          <div><dt>Sex</dt><dd id="vy_sex"></dd></div>
+          <div><dt>Civil Status</dt><dd id="vy_civil"></dd></div>
+          <div><dt>Email</dt><dd id="vy_email"></dd></div>
+          <div><dt>Education</dt><dd id="vy_educ"></dd></div>
+          <div><dt>Employment</dt><dd id="vy_emp"></dd></div>
+          <div><dt>Skills</dt><dd id="vy_skill"></dd></div>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.vy-list > div { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px dashed #e6ebf2; }
+.vy-list > div:last-child { border-bottom:0; }
+.vy-list dt { font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#6b7a90; flex:0 0 36%; margin:0; padding-top:2px; }
+.vy-list dd { margin:0; text-align:right; font-size:.9rem; overflow-wrap:anywhere; flex:1; }
+</style>
+<script>
+function skRowAct(item, sel) {
+    var td = item.closest('td'), b = td && td.querySelector(sel);
+    if (b) b.click();   // reuse the existing View / Edit / Delete buttons and their modals
+}
+function fillViewYouth(btn) {
+    var d = btn.dataset, set = function (id, v) { document.getElementById(id).textContent = v && v !== '' ? v : '—'; };
+    set('vy_name', d.name); set('vy_id', d.id); set('vy_age', d.age); set('vy_sex', d.sex);
+    set('vy_civil', d.civil); set('vy_email', d.email); set('vy_educ', d.educ);
+    set('vy_emp', d.emp); set('vy_skill', d.skill);
+    var img = document.getElementById('vy_photo');
+    if (d.photo) { img.src = d.photo; img.classList.remove('d-none'); } else { img.classList.add('d-none'); img.removeAttribute('src'); }
+}
+</script>
 <!-- Photo Preview Modal -->
 <div class="modal fade" id="photoModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -372,6 +563,38 @@ function submitBulkDelete() {
 
 </script>
 <script>
+function setAddMode(mode) {
+    var walk = (mode === 'walkin');
+    document.getElementById('add_mode').value = walk ? 'walkin' : 'resident';
+    document.getElementById('modeResBtn').classList.toggle('active', !walk);
+    document.getElementById('modeWalkBtn').classList.toggle('active', walk);
+    document.querySelectorAll('.mode-resident').forEach(function (e) { e.classList.toggle('d-none', walk); });
+    document.querySelectorAll('.mode-walkin').forEach(function (e) { e.classList.toggle('d-none', !walk); });
+    document.querySelectorAll('.w-field').forEach(function (e) { e.disabled = !walk; });
+    var sel = document.getElementById('add_res');
+    if (sel) sel.required = !walk;
+}
+(function () {
+    var sel = document.getElementById('add_res');
+    setAddMode('resident');
+    if (!sel) return;
+    var all = Array.prototype.slice.call(sel.options);
+    sel.addEventListener('change', function () {
+        var o = sel.options[sel.selectedIndex];
+        if (!o) return;
+        document.getElementById('add_age').value = o.dataset.age || '';
+        document.getElementById('add_sex').value = o.dataset.sex || '';
+        var em = document.getElementById('add_email');
+        if (!em.value) em.value = o.dataset.email || '';
+    });
+    document.getElementById('add_res_filter').addEventListener('input', function () {
+        var q = this.value.toLowerCase().trim();
+        sel.innerHTML = '';
+        all.forEach(function (o) { if (!q || o.text.toLowerCase().indexOf(q) !== -1) sel.appendChild(o); });
+    });
+})();
+</script>
+<script>
 document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
     const b = e.relatedTarget;
     document.getElementById('edit_id').value      = b.dataset.id;
@@ -379,6 +602,9 @@ document.getElementById('editModal').addEventListener('show.bs.modal', function(
     document.getElementById('edit_fname').value   = b.dataset.fname;
     document.getElementById('edit_mi').value      = b.dataset.mi;
     document.getElementById('edit_age').value     = b.dataset.age;
+    var walk = parseInt(b.dataset.id, 10) >= 1000000000;   // walk-in youth (no resident record): age is editable
+    document.getElementById('edit_age').readOnly = !walk;
+    document.getElementById('edit_age').style.background = walk ? '' : '#f4f7fb';
     document.getElementById('edit_sex').value     = b.dataset.sex;
     document.getElementById('edit_civil').value   = b.dataset.civil;
     document.getElementById('edit_email').value   = b.dataset.email;
@@ -420,5 +646,4 @@ document.querySelectorAll('form').forEach(function (form) {
     });
 });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <?php include(ROOT_PATH . '/dashboard_sidebar_end.php'); ?>

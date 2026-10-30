@@ -1,3 +1,27 @@
+<?php
+// Turn http(s):// and www. links in a post into tappable links (safe: text is escaped first)
+if (!function_exists('sk_linkify')) {
+    function sk_linkify($text) {
+        $safe = htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
+        $safe = preg_replace_callback(
+            '~(?<![\w@/])((?:https?://|www\.)[^\s<]+)~iu',
+            function ($m) {
+                $url = $m[1]; $trail = '';
+                // keep trailing punctuation outside the link
+                while ($url !== '' && preg_match('~[.,;:!?)\]\'"]$|&quot;$|&#0?39;$~', $url)) {
+                    if (preg_match('~(&quot;|&#0?39;)$~', $url, $q)) { $trail = $q[1] . $trail; $url = substr($url, 0, -strlen($q[1])); }
+                    else { $trail = substr($url, -1) . $trail; $url = substr($url, 0, -1); }
+                }
+                if ($url === '') return $m[0];
+                $href = preg_match('~^https?://~i', $url) ? $url : 'https://' . $url;
+                return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer" class="post-link">' . $url . '</a>' . $trail;
+            },
+            $safe
+        );
+        return nl2br($safe);
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -201,6 +225,8 @@
         .t-general       { background: #f0f4f8; color: #555; }
         .b-title { font-size: 1.05rem; font-weight: 800; color: #1b74e4; margin-bottom: 0.5rem; line-height: 1.4; }
         .b-content { font-size: 0.9rem; color: #444; line-height: 1.7; margin-bottom: 0.75rem; }
+.b-content a.post-link { color:#1967d2;text-decoration:underline;word-break:break-all;cursor:pointer; }
+.b-content { overflow-wrap:anywhere; }
         .b-meta { font-size: 0.75rem; color: #65676b; display: flex; flex-wrap: wrap; gap: 12px; }
         .b-meta span { display: flex; align-items: center; gap: 4px; }
 
@@ -477,7 +503,7 @@
             <div class="pin-ribbon"><i class="bi bi-pin-fill me-1"></i>Pinned</div>
             <span class="b-type-badge <?= $tc ?>"><?= htmlspecialchars($b['post_type']) ?></span>
             <div class="b-title"><?= htmlspecialchars($b['post_title']) ?></div>
-            <div class="b-content"><?= nl2br(htmlspecialchars($b['post_content'])) ?></div>
+            <div class="b-content"><?= sk_linkify($b['post_content']) ?></div>
             <div class="b-meta">
                 <span><i class="fas fa-user"></i><?= htmlspecialchars($b['posted_by']) ?></span>
                 <span><i class="fas fa-calendar"></i><?= date('M d, Y', strtotime($b['date_posted'])) ?></span>
@@ -501,7 +527,7 @@
         <div class="bulletin-card">
             <span class="b-type-badge <?= $tc ?>"><?= htmlspecialchars($b['post_type']) ?></span>
             <div class="b-title"><?= htmlspecialchars($b['post_title']) ?></div>
-            <div class="b-content"><?= nl2br(htmlspecialchars($b['post_content'])) ?></div>
+            <div class="b-content"><?= sk_linkify($b['post_content']) ?></div>
             <div class="b-meta">
                 <span><i class="fas fa-user"></i><?= htmlspecialchars($b['posted_by']) ?></span>
                 <span><i class="fas fa-calendar"></i><?= date('M d, Y', strtotime($b['date_posted'])) ?></span>

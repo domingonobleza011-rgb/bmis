@@ -16,6 +16,15 @@ class AdminResidentController extends Controller
    $userdetails = $bmis->get_userdata();
    $bmis->validate_staff_or_admin();
    $view = $residentbmis->view_resident_paginated(10);
+   // Opened from the global search ("Open Residents page"): show only the tapped resident
+   if (($_GET['gs_t'] ?? '') === 'tbl_resident' && ctype_digit((string)($_GET['gs_id'] ?? ''))) {
+       $gs_st = $conn->prepare("SELECT * FROM tbl_resident WHERE id_resident = ? LIMIT 1");
+       $gs_st->execute([(int)$_GET['gs_id']]);
+       $gs_row = $gs_st->fetch(PDO::FETCH_ASSOC);
+       if ($gs_row) {
+           $view = ['rows' => [$gs_row], 'total' => 1, 'page' => 1, 'per_page' => 10, 'last_page' => 1];
+       }
+   }
    $residentbmis->create_resident();
    $residentbmis->update_resident();
    $residentbmis->delete_resident();

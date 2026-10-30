@@ -124,11 +124,11 @@ if ($userdetails['role'] !== 'user' || ($userdetails['position'] ?? '') !== 'Sk 
 // ADD enrollment
 if (isset($_POST['add_enrollment'])) {
     // Get youth name from tbl_youth, contact from their resident profile
-    $y = $conn->prepare("SELECT y.fname, y.lname, r.contact FROM tbl_youth y JOIN tbl_resident r ON r.id_resident = y.id_youth WHERE y.id_youth=?");
+    $y = $conn->prepare("SELECT y.fname, y.lname, r.contact FROM tbl_youth y LEFT JOIN tbl_resident r ON r.id_resident = y.id_youth WHERE y.id_youth=?");
     $y->execute([$_POST['id_youth']]);
     $yu = $y->fetch(PDO::FETCH_ASSOC);
     $name = $yu ? ($yu['lname'].', '.$yu['fname']) : '';
-    $contact = $yu ? $yu['contact'] : '';
+    $contact = $yu ? ($yu['contact'] ?? '') : '';
     $stmt = $conn->prepare("INSERT INTO tbl_youth_enrollment (id_program,id_youth,youth_name,contact,status) VALUES (?,?,?,?,?)");
     $stmt->execute([$_POST['id_program'],$_POST['id_youth'],$name,$contact,$_POST['status']]);
     header("Location: sk_enrollment.php?success=added&program=".$_POST['id_program']); exit;

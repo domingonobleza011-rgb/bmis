@@ -75,22 +75,22 @@
             background:linear-gradient(90deg,var(--blue-deep),var(--blue-bright),var(--gold));
         }
         .card-header-strip {
-            background:linear-gradient(135deg,var(--blue-deep),var(--blue-mid));
+            background:#fff; border-bottom:2px solid var(--gold);
             padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
             flex-wrap:wrap; gap:10px;
         }
-        .card-header-strip h2 { font-family:'Playfair Display',serif; font-size:18px; color:#fff; margin:0; }
+        .card-header-strip h2 { font-family:'Playfair Display',serif; font-size:18px; color:var(--blue-deep); margin:0; }
         .card-header-strip .header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .card-header-strip .total-badge { font-size:12px; color:rgba(255,255,255,.6); }
+        .card-header-strip .total-badge { font-size:12px; color:#7a91b0; }
 
         /* ── Delete by Range button ── */
         .btn-purge {
-            padding:7px 15px; border-radius:8px; border:1.5px solid rgba(255,255,255,.3);
-            background:rgba(255,255,255,.12); color:#fff; font-size:12px; font-weight:600;
+            padding:7px 15px; border-radius:8px; border:1.5px solid var(--border);
+            background:#fdf3e3; color:#a2691f; font-size:12px; font-weight:600;
             cursor:pointer; display:inline-flex; align-items:center; gap:7px;
             transition:background .2s,border-color .2s; white-space:nowrap;
         }
-        .btn-purge:hover { background:rgba(214,48,49,.55); border-color:rgba(214,48,49,.7); }
+        .btn-purge:hover { background:rgba(214,48,49,.12); border-color:rgba(214,48,49,.4); color:var(--danger); }
         .btn-purge i { font-size:11px; }
 
         .bulk-bar {
@@ -121,17 +121,19 @@
             background:#fff; color:#7a91b0; font-size:13px; cursor:pointer;
             display:inline-flex; align-items:center; gap:6px;
         }
-        .log-table { width:100%; border-collapse:collapse; }
+        .log-table { width:100%; border-collapse:separate; border-spacing:0; font-size:0.78rem; }
         .log-table thead th {
-            padding:11px 16px; font-size:11px; font-weight:600; letter-spacing:.5px;
-            text-transform:uppercase; color:#7a91b0;
-            background:#f8fafd; border-bottom:1px solid var(--border); white-space:nowrap;
+            padding:8px 10px; font-size:0.7rem; font-weight:700; letter-spacing:.03em;
+            text-transform:uppercase; color:#5a6b85;
+            background:#f8fafd; border:none;
+            border-bottom:2px solid #c9943a; white-space:nowrap;
         }
-        .log-table thead th:first-child { width:40px; text-align:center; }
+        .log-table thead th:first-child { width:34px; text-align:center; }
+        .log-table tbody tr:nth-child(even) { background:#f4f8fd; }
         .log-table tbody tr { border-bottom:1px solid #f0f4fb; transition:background .15s; }
-        .log-table tbody tr:hover { background:#f5f8fe; }
+        .log-table tbody tr:hover { background:#fbf1de !important; }
         .log-table tbody tr.row-selected { background:#eef4ff !important; }
-        .log-table td { padding:11px 16px; font-size:13px; color:var(--ink); vertical-align:middle; }
+        .log-table td { padding:5px 10px; font-size:0.78rem; line-height:1.35; color:var(--ink); vertical-align:middle; }
         .log-table td.muted { color:#7a91b0; }
         .log-table td:first-child { text-align:center; }
         .cb-wrap { display:inline-flex; align-items:center; justify-content:center; }
@@ -278,21 +280,115 @@
         .toast.show { transform:translateY(0); opacity:1; }
         .toast i { color:var(--gold); font-size:15px; }
 
-        @media(max-width:768px) {
-            .filter-card { flex-direction:column; }
-            .fg-search { min-width:100%; }
-            .log-table thead th:nth-child(7),
-            .log-table td:nth-child(7) { display:none; }
-            .range-options { grid-template-columns:1fr; }
+        /* ============================================================
+           MOBILE — filters become a tidy grid, tables become cards
+           ============================================================ */
+        @media (max-width: 768px) {
+            .container-fluid { padding-left: 12px; padding-right: 12px; }
+
+            /* heading + tabs */
+            .page-heading { margin-bottom: 16px; gap: 10px; }
+            .page-heading .head-icon { width: 40px; height: 40px; font-size: 16px; flex-shrink: 0; }
+            .page-heading h1 { font-size: 18px; }
+            .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+            .tab-bar::-webkit-scrollbar { display: none; }
+            .tab-bar a { flex: 1 0 auto; text-align: center; white-space: nowrap; padding: 9px 12px; }
+
+            /* filters / search: 2-col grid, big touch targets */
+            .filter-card {
+                display: grid; grid-template-columns: 1fr 1fr;
+                gap: 10px; padding: 14px; align-items: end;
+            }
+            .filter-card .fg { min-width: 0; }
+            .filter-card .fg-search,
+            .filter-card .fg:nth-child(2),
+            .filter-card .fg:last-child { grid-column: 1 / -1; }
+            .filter-card input,
+            .filter-card select {
+                width: 100%; min-height: 42px; font-size: 16px; /* 16px stops iOS zoom-on-focus */
+            }
+            .filter-card .fg:last-child > div { display: flex; gap: 8px; }
+            .filter-card .fg:last-child label { display: none; }
+            .btn-filter, .btn-reset { flex: 1; justify-content: center; min-height: 42px; }
+
+            /* card header */
+            .card-header-strip { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+            .card-header-strip h2 { font-size: 16px; }
+            .card-header-strip > div,
+            .card-header-strip .header-right {
+                width: 100%; display: flex; flex-wrap: wrap; gap: 10px !important;
+                align-items: center; justify-content: space-between;
+            }
+            .btn-purge, .btn-bulk-delete { min-height: 38px; }
+
+            /* bulk bar */
+            .bulk-bar { flex-wrap: wrap; padding: 10px 14px; gap: 8px; }
+            .bulk-count { flex: 1 0 100%; }
+            .btn-delete-bulk, .btn-deselect { flex: 1; justify-content: center; }
+
+            /* table -> stacked cards */
+            .log-table, .log-table tbody, .log-table tr, .log-table td { display: block; width: 100%; }
+            .log-table thead { display: block; }
+            .log-table thead tr { display: flex; align-items: center; padding: 10px 14px; background: #f8fafd; border-bottom: 2px solid #c9943a; }
+            .log-table thead th { display: none; }
+            .log-table thead th:first-child {
+                display: flex; align-items: center; gap: 10px; width: auto;
+                padding: 0; border: 0; background: none; text-align: left;
+            }
+            .log-table thead th:first-child::after {
+                content: 'Select all'; font-size: 12px; font-weight: 600; color: #5a6b85;
+                text-transform: none; letter-spacing: 0;
+            }
+            .log-table tbody { padding: 10px 12px 4px; }
+            .log-table tbody tr,
+            .log-table tbody tr:nth-child(even) {
+                background: var(--tm-surface, #fff); border: 1px solid var(--tm-border, #dfe6f1);
+                border-radius: 12px; padding: 6px 12px; margin-bottom: 10px;
+                box-shadow: 0 2px 8px rgba(26,46,77,.06);
+            }
+            .log-table tbody tr.row-selected { border-color: var(--blue-bright); box-shadow: 0 0 0 2px var(--blue-glow); }
+            .log-table td,
+            .log-table td:first-child {
+                display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px;
+                align-items: start; padding: 7px 0; text-align: left;
+                border-bottom: 1px dashed rgba(122,145,176,.28); max-width: none !important;
+                word-break: break-word;
+            }
+            .log-table td:last-child { border-bottom: 0; }
+            .log-table td::before {
+                content: attr(data-label); font-size: 10px; font-weight: 700;
+                letter-spacing: .04em; text-transform: uppercase;
+                color: var(--tm-muted, #7a91b0); padding-top: 2px;
+            }
+            .log-table td .cv { min-width: 0; }
+            .log-table td[data-label="Select"] .cb-wrap,
+            .log-table td[data-label="Select"] input { justify-content: flex-start; }
+
+            /* pagination */
+            .pagination-row { flex-direction: column; align-items: center; text-align: center; padding: 14px 12px; }
+            .pagination-links { flex-wrap: wrap; justify-content: center; }
+            .pagination-links a, .pagination-links span { min-width: 38px; text-align: center; padding: 8px 12px; }
+
+            /* stat pills (login history) */
+            .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-pill { min-width: 0; padding: 12px; }
+            .stat-pill .s-val { font-size: 18px; }
+
+            /* modals + toast */
+            .modal-box { padding: 24px 18px; }
+            .modal-actions { flex-wrap: wrap; }
+            .modal-actions button { flex: 1; min-height: 42px; }
+            .range-options { grid-template-columns: 1fr; }
+            .toast { left: 14px; right: 14px; bottom: 16px; }
+        }
+        @media (max-width: 380px) {
+            .filter-card { grid-template-columns: 1fr; }
+            .log-table td, .log-table td:first-child { grid-template-columns: 76px minmax(0, 1fr); }
         }
     </style>
 </head>
 <body id="page-top">
 <div class="container-fluid mt-4">
-    <div class="tab-bar">
-        <a href="admn_activity_logs.php" class="active"><i class="fas fa-tasks mr-1"></i> Activity Logs</a>
-        <a href="admn_login_history.php"><i class="fas fa-sign-in-alt mr-1"></i> Login History</a>
-    </div>
     
     <form method="GET" action="">
         <div class="filter-card">
@@ -391,27 +487,27 @@
                 $log_id = (int)$log['id_log'];
             ?>
             <tr data-id="<?php echo $log_id; ?>">
-                <td>
+                <td data-label="Select"><div class="cv">
                     <div class="cb-wrap">
                         <input type="checkbox" class="row-chk" id="chk<?php echo $log_id; ?>" value="<?php echo $log_id; ?>">
                         <label for="chk<?php echo $log_id; ?>"></label>
                     </div>
-                </td>
-                <td class="muted"><?php echo $row_num++; ?></td>
-                <td>
+                </div></td>
+                <td class="muted" data-label="#"><div class="cv"><?php echo $row_num++; ?></div></td>
+                <td data-label="Admin"><div class="cv">
                     <div style="font-weight:600;"><?php echo htmlspecialchars($log['admin_name']); ?></div>
                     <div style="font-size:11px;color:#9ab0c8;"><?php echo htmlspecialchars($log['role']); ?></div>
-                </td>
-                <td><span class="badge-module <?php echo $mod_class; ?>"><?php echo htmlspecialchars($log['module']); ?></span></td>
-                <td><span class="badge-action"><?php echo htmlspecialchars($log['action']); ?></span></td>
-                <td style="max-width:300px;"><?php echo htmlspecialchars($log['description']); ?></td>
-                <td class="muted" style="font-size:12px;font-family:monospace;"><?php echo htmlspecialchars($log['ip_address'] ?? '—'); ?></td>
-                <td class="muted" style="white-space:nowrap;">
+                </div></td>
+                <td data-label="Module"><div class="cv"><span class="badge-module <?php echo $mod_class; ?>"><?php echo htmlspecialchars($log['module']); ?></span></div></td>
+                <td data-label="Action"><div class="cv"><span class="badge-action"><?php echo htmlspecialchars($log['action']); ?></span></div></td>
+                <td style="max-width:300px;" data-label="Description"><div class="cv"><?php echo htmlspecialchars($log['description']); ?></div></td>
+                <td class="muted" style="font-size:12px;font-family:monospace;" data-label="IP Address"><div class="cv"><?php echo htmlspecialchars($log['ip_address'] ?? '—'); ?></div></td>
+                <td class="muted" style="white-space:nowrap;" data-label="Date &amp; Time"><div class="cv">
                     <?php
                         $dt = new DateTime($log['created_at']);
                         echo $dt->format('M j, Y') . '<br><span style="font-size:11px;">' . $dt->format('h:i A') . '</span>';
                     ?>
-                </td>
+                </div></td>
             </tr>
             <?php endforeach; ?>
             </tbody>

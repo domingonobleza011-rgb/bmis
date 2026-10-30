@@ -59,6 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_complaint'])) 
             ':photo_path'     => $photo_path,
         ]);
         $success_msg = 'Your complaint has been submitted successfully!';
+
+        // Same slide-in toast used after submitting a Barangay Clearance request
+        if (function_exists('notif')) {
+            notif('Complaint submitted! The barangay will review it and you will be notified of any updates.', 'success');
+        }
     }
 }
 ?>

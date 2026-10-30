@@ -696,18 +696,17 @@
 <!-- NAVBAR -->
 <?php include ROOT_PATH . '/resident_navbar.php'; ?>
 
-<div class="page-wrap">
+<div class="resident-hero">
+    <i class="bi bi-megaphone-fill"></i>
+    <h1>Announcements</h1>
+    <?php if(is_array($view) && count($view) > 0): ?>
+        <p><?= count($view); ?> post<?= count($view) > 1 ? 's' : ''; ?></p>
+    <?php else: ?>
+        <p>Latest news from your barangay</p>
+    <?php endif; ?>
+</div>
 
-    <!-- PAGE HEADER -->
-    <div class="page-header">
-        <div class="page-title">
-            <i class="bi bi-megaphone-fill"></i>
-            Announcements
-        </div>
-        <?php if(is_array($view) && count($view) > 0): ?>
-            <span class="post-count-badge"><?= count($view); ?> post<?= count($view) > 1 ? 's' : ''; ?></span>
-        <?php endif; ?>
-    </div>
+<div class="page-wrap">
 
 <?php 
 $emojiMap = ['like'=>'👍','love'=>'❤️','haha'=>'😂','wow'=>'😮','sad'=>'😢','angry'=>'😡'];
@@ -729,27 +728,22 @@ if(is_array($view) && count($view) > 0):
         $imgClass = $imgCount === 1 ? 'gallery-item single' : ($imgCount === 2 ? 'gallery-item multi' : 'gallery-item multi-3');
         
         // ── Process announcement text for "See more" ──
-        $announcement_text = $ann['event'] ?? '';
-        $linkified_text = bmis_linkify_announcement($announcement_text);
+        $announcement_text = trim((string) ($ann['event'] ?? ''));
         $word_limit = 20; // Facebook-style word limit
-        $words = preg_split('/\s+/', strip_tags($linkified_text));
-        $is_long = count($words) > $word_limit;
-        
-        // Build short and full versions with HTML preserved
-        if ($is_long) {
-            $short_words = array_slice($words, 0, $word_limit);
-            $short_text = implode(' ', $short_words) . '...';
-            // Re-linkify the short text
-            $short_text = bmis_linkify_announcement($short_text);
-            $full_text = $linkified_text;
-        } else {
-            $short_text = $linkified_text;
-            $full_text = $linkified_text;
+
+        // Split on whitespace but keep it, so line breaks survive in the preview
+        $parts = preg_split('/(\s+)/u', $announcement_text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $word_count = 0; $short_raw = ''; $is_long = false;
+        foreach ($parts as $tok) {
+            if (trim($tok) !== '') {
+                if ($word_count >= $word_limit) { $is_long = true; break; }
+                $word_count++;
+            }
+            $short_raw .= $tok;
         }
-        
-        // Escape for JSON/JS
-        $escaped_full = addslashes($full_text);
-        $escaped_short = addslashes($short_text);
+
+        $full_text  = bmis_format_announcement($announcement_text);
+        $short_text = $is_long ? bmis_format_announcement(rtrim($short_raw)) . '&hellip;' : $full_text;
 ?>
     <!-- ANNOUNCEMENT CARD -->
     <div class="announce-card" id="ann-card-<?= $ann_id; ?>">
@@ -772,23 +766,7 @@ if(is_array($view) && count($view) > 0):
         <!-- Body with See More functionality -->
         <?php if(!empty($announcement_text)): ?>
         <div class="card-body-custom">
-            <div class="card-text" id="post-text-<?= $ann_id; ?>">
-                <?php if ($is_long): ?>
-                    <span class="short-text" id="short-<?= $ann_id; ?>">
-                        <?= nl2br($short_text); ?>
-                    </span>
-                    <span class="full-text" id="full-<?= $ann_id; ?>" style="display:none;">
-                        <?= nl2br($full_text); ?>
-                    </span>
-                    <button class="see-more-btn" id="see-more-btn-<?= $ann_id; ?>" 
-                            onclick="toggleSeeMore(<?= $ann_id; ?>)">
-                        <span id="see-more-label-<?= $ann_id; ?>">See more</span>
-                        <i class="bi bi-chevron-down" id="see-more-icon-<?= $ann_id; ?>"></i>
-                    </button>
-                <?php else: ?>
-                    <span><?= nl2br($full_text); ?></span>
-                <?php endif; ?>
-            </div>
+            <div class="card-text" id="post-text-<?= $ann_id; ?>"><?php if ($is_long): ?><span class="short-text" id="short-<?= $ann_id; ?>"><?= $short_text; ?></span><span class="full-text" id="full-<?= $ann_id; ?>" style="display:none;"><?= $full_text; ?></span> <button class="see-more-btn" id="see-more-btn-<?= $ann_id; ?>" onclick="toggleSeeMore(<?= $ann_id; ?>)"><span id="see-more-label-<?= $ann_id; ?>">See more</span> <i class="bi bi-chevron-down" id="see-more-icon-<?= $ann_id; ?>"></i></button><?php else: ?><span><?= $full_text; ?></span><?php endif; ?></div>
         </div>
         <?php endif; ?>
 
@@ -1122,5 +1100,6 @@ function performDeleteComment(cid,aid){
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

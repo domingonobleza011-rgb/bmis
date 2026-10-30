@@ -3,6 +3,7 @@ error_reporting(E_ALL ^ E_WARNING);
 ini_set('display_errors', 1);
 require_once ROOT_PATH . '/classes/security.php';
 require_once ROOT_PATH . '/classes/mailer.php';
+require_once ROOT_PATH . '/classes/turnstile.php';
 bmis_session_start();
 date_default_timezone_set('Asia/Manila');
 include(ROOT_PATH . '/autoloader.php');
@@ -15,6 +16,10 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['find_account'])) {
     bmis_verify_csrf();
     $identity = trim($_POST['identity']);
+    $cap = bmis_verify_turnstile();
+    if (!$cap['ok']) {
+        $error = $cap['error'];
+    } else {
     $stmt = $conn->prepare(
         "SELECT id_resident, fname, lname, security_question, security_answer
          FROM tbl_resident
@@ -37,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['find_account'])) {
         $_SESSION['reset_answer']   = $resident['security_answer'];
         header('Location: forgot_password.php?step=security_question');
         exit;
+    }
     }
 }
 

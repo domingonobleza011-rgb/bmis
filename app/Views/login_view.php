@@ -60,6 +60,22 @@
             border-radius: 40px;
             transition: all 0.2s ease;
         }
+.navbar-brand-avatar {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #fff;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+.navbar-brand-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
         .navbar-custom .nav-link:hover {
             background: #f0f2f5;
             color: #1b74e4 !important;
@@ -593,23 +609,17 @@
             .role-list-item .role-text { font-size: 0.82rem; }
         }
     </style>
+    <link rel="stylesheet" href="css/bg-blur.css?v=20261026b">
+    <link rel="stylesheet" href="css/skeleton-public.css?v=20261026c">
 </head>
 <body>
 
 <!-- ===== NAVBAR ===== -->
 <nav class="navbar navbar-expand navbar-custom">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">
-            <i class="fas fa-landmark"></i> SAN PEDRO IRIGA
+        <a class="navbar-brand" href="index.php">
+            <span class="navbar-brand-avatar"><img src="icons/logo.png" alt="Barangay San Pedro"></span> SAN PEDRO IRIGA
         </a>
-        <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
-            <a class="nav-link" data-bs-toggle="modal" data-bs-target="#officialsModal" href="#">
-                <i class="fas fa-users"></i> <span class="nav-link-text">Barangay Officials</span>
-            </a>
-            <a class="nav-link" href="resident_registration.php">
-                <i class="fas fa-user-plus"></i> <span class="nav-link-text">Register</span>
-            </a>
-        </div>
     </div>
 </nav>
 
@@ -690,12 +700,15 @@
                     <input type="checkbox" class="form-check-input" id="showCheck" onclick="togglePass()">
                     <label class="form-check-label" for="showCheck">Show Password</label>
                 </div>
-                <div class="cf-turnstile" data-sitekey="0x4AAAAAAEHzfWAU9-zKulev"></div>
-
+<div class="cf-turnstile" data-sitekey="0x4AAAAAAEHzfWAU9-zKulev"></div>
                 <button type="submit" name="login" class="btn-signin">
                     <i class="fas fa-sign-in-alt me-2"></i> SIGN IN
                 </button>
                 <input type="hidden" name="login" value="1">
+                <p class="text-center mt-2 mb-0" style="font-size:.78rem;opacity:.85;">
+                    By signing in you acknowledge our <a href="/privacy" target="_blank" rel="noopener">Privacy Notice</a>
+                    and <a href="/terms" target="_blank" rel="noopener">Terms</a>.
+                </p>
             </form>
 
             <div class="d-flex justify-content-end mt-2">
@@ -917,5 +930,8 @@ document.querySelectorAll('form.show-loader').forEach(form => {
     });
 </script>
 <script src="/js/pwa.js"></script>
+<script src="js/skeleton-pages.js?v=20261026c"></script>
+<script src="js/skeleton-public.js?v=20261026c"></script>
+<?php $bmis_legal_links = true; include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

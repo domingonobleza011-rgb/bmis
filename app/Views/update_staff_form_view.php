@@ -22,7 +22,7 @@
                             <div class="col-md-4 text-center">
                                 <label class="d-block mb-2">Current Photo</label>
                                 <?php if(!empty($staff['photo'])): ?>
-                                    <img src="/BarangaySystem-master/<?= $staff['photo']; ?>" class="img-thumbnail" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%;">
+                                    <img src="<?= htmlspecialchars(ltrim($staff['photo'], '/')) ?>" alt="Current photo" class="img-thumbnail" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%;">
                                 <?php else: ?>
                                     <i class="fas fa-user-circle fa-7x text-secondary"></i>
                                 <?php endif; ?>
@@ -49,19 +49,9 @@
                             </div>
                         </div>
                         
-                        <div class="row mt-3">
-                            <div class="col">
-                                <label class="form-group">Login Identity (Email or Phone): </label>
-                                <input type="text" class="form-control" name="login_identity" value="<?= htmlspecialchars($staff['login_identity']);?>" placeholder="Enter Email or Phone Number" readonly
-                            </div>
-                            <div class="col">
-                                <label class="form-group">Password:</label>
-                                <input type="password" class="form-control" name="password" placeholder="Enter new password to change" readonly>
-                            </div>
-                        </div>
  
                         <div class="row mt-3">
-                            <div class="col"> 
+                            <div class="col-md-4">
                                 <label class="form-group">Position: </label>
                                 <select class="form-control" name="position" readonly>
                                     <option value="<?= $staff['position'];?>" selected><?= $staff['position'];?></option>
@@ -83,14 +73,11 @@
                                         <option value="Sk Chairperson">Sk Chairperson</option>
                                     </select>
                             </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-8">
+                            <div class="col-md-5">
                                 <label class="form-group">Address</label>
                                 <input class="form-control" type="text" name="address" value="<?= htmlspecialchars($staff['address']);?>" readonly>
                             </div>
-                           
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label class="form-group"> Gender: </label>
                                 <select class="form-control" name="sex" readonly>
                                     <option value="Male" <?= $staff['sex'] == 'Male' ? 'selected' : ''; ?>>Male</option>

@@ -31,11 +31,11 @@ $resident_nav_items = [
         'mobile' => 'News',
     ],
     [
-        'match'  => ['resident_budget.php'],
-        'href'   => 'resident_budget.php',
-        'icon'   => 'bi-wallet2',
-        'label'  => 'Budget',
-        'mobile' => 'Budget',
+        'match'  => ['resident_youth_profile.php'],
+        'href'   => 'resident_youth_profile.php',
+        'icon'   => 'bi-person-standing',
+        'label'  => 'Youth portal',
+        'mobile' => 'Youth',
     ],
     [
         'match'  => ['resident_profile.php'],

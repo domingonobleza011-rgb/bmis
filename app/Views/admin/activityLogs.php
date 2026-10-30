@@ -291,10 +291,6 @@ include('dashboard_sidebar_start.php');
 </head>
 <body id="page-top">
 <div class="container-fluid mt-4">
-    <div class="tab-bar">
-        <a href="admn_activity_logs.php" class="active"><i class="fas fa-tasks mr-1"></i> Activity Logs</a>
-        <a href="admn_login_history.php"><i class="fas fa-sign-in-alt mr-1"></i> Login History</a>
-    </div>
     
     <form method="GET" action="">
         <div class="filter-card">

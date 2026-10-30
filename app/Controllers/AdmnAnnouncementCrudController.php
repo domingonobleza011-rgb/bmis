@@ -49,5 +49,18 @@ function bmis_linkify_announcement($text) {
         $escaped
     );
 }
+
+/**
+ * Cleans announcement text before display: normalizes line endings,
+ * strips trailing spaces on each line, and collapses runs of blank lines
+ * into a single blank line. The CSS (white-space: pre-wrap) handles the
+ * actual line breaks, so do NOT also use nl2br().
+ */
+function bmis_format_announcement($text) {
+    $text = str_replace(["\r\n", "\r"], "\n", (string) $text);
+    $text = preg_replace('/[ \t\x{00A0}]+\n/u', "\n", $text);
+    $text = preg_replace('/\n{3,}/', "\n\n", $text);
+    return bmis_linkify_announcement(trim($text));
+}
 ?>
 <?php require ROOT_PATH . '/app/Views/admn_announcement_crud_view.php'; ?>

@@ -64,7 +64,9 @@ function bmis_require_login(): array {
 
 function bmis_require_admin(): array {
     $u = bmis_require_login();
-    if ($u['role'] !== 'administrator' && $u['role'] !== 'Admin') {
+    // Staff (role 'user', except SK Chairperson) have the same access as admins.
+    $is_staff = ($u['role'] === 'user') && (($u['position'] ?? '') !== 'Sk Chairperson');
+    if ($u['role'] !== 'administrator' && $u['role'] !== 'Admin' && !$is_staff) {
         http_response_code(403);
         die('Access denied.');
     }
@@ -95,7 +97,10 @@ function bmis_require_admin_dashboard(): array {
 
     $is_allowed_position = in_array($u['position'] ?? '', $admin_dashboard_positions, true);
 
-    if (!$is_admin_role && !$is_allowed_position) {
+    // Any staff account (role 'user') except SK Chairperson gets admin access.
+    $is_staff_role = ($u['role'] === 'user') && (($u['position'] ?? '') !== 'Sk Chairperson');
+
+    if (!$is_admin_role && !$is_allowed_position && !$is_staff_role) {
         http_response_code(403);
         die('Access denied.');
     }

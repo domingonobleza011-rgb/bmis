@@ -22,54 +22,12 @@ if (isset($_POST['search_senior'])) {
 
     $paged = ['rows' => $rows, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'last_page' => (int)ceil($total / $perPage)];
 ?>
-<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
-    <thead class="alert-info"><tr><th>Fullname</th><th>Sex</th><th>Status</th><th>House No.</th><th>Street</th><th>Barangay</th><th>Municipality</th><th>Birth date</th><th>Birth place</th><th>Nationality</th><th>Age</th></tr></thead>
-    <tbody>
-        <?php foreach ($rows as $row): ?>
-        <tr>
-            <td><?= htmlspecialchars($row['lname']) ?> <?= htmlspecialchars($row['fname']) ?>, <?= htmlspecialchars($row['mi']) ?></td>
-            <td><?= htmlspecialchars($row['sex']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
-            <td><?= htmlspecialchars($row['houseno']) ?></td>
-            <td><?= htmlspecialchars($row['street']) ?></td>
-            <td><?= htmlspecialchars($row['brgy']) ?></td>
-            <td><?= htmlspecialchars($row['municipal']) ?></td>
-            <td><?= htmlspecialchars($row['bdate']) ?></td>
-            <td><?= htmlspecialchars($row['bplace']) ?></td>
-            <td><?= htmlspecialchars($row['nationality']) ?></td>
-            <td><?= htmlspecialchars($row['computed_age']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if (empty($rows)): ?><tr><td colspan="14" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
-    </tbody>
-</table>
-<?php render_pagination($paged); ?>
+<?php $res_empty_text = 'No senior citizens found.'; require ROOT_PATH . '/app/Views/resident_cards_partial.php'; ?>
 
 <?php } else {
     $rows  = $view['rows']  ?? [];
     $paged = $view;
 ?>
-<table class="table table-hover text-center table-bordered" style="min-width:1000px;">
-    <thead class="alert-info"><tr><th>Fullname</th><th>Sex</th><th>Status</th><th>House No.</th><th>Street</th><th>Barangay</th><th>Municipality</th><th>Birth date</th><th>Birth place</th><th>Nationality</th><th>Age</th></tr></thead>
-    <tbody>
-        <?php foreach ($rows as $row): ?>
-        <tr>
-            <td><?= htmlspecialchars($row['lname']) ?> <?= htmlspecialchars($row['fname']) ?>, <?= htmlspecialchars($row['mi']) ?></td>
-            <td><?= htmlspecialchars($row['sex']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
-            <td><?= htmlspecialchars($row['houseno']) ?></td>
-            <td><?= htmlspecialchars($row['street']) ?></td>
-            <td><?= htmlspecialchars($row['brgy']) ?></td>
-            <td><?= htmlspecialchars($row['municipal']) ?></td>
-            <td><?= htmlspecialchars($row['bdate']) ?></td>
-            <td><?= htmlspecialchars($row['bplace']) ?></td>
-            <td><?= htmlspecialchars($row['nationality']) ?></td>
-            <td><?= htmlspecialchars($row['computed_age']) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if (empty($rows)): ?><tr><td colspan="14" class="text-muted py-3">No records found.</td></tr><?php endif; ?>
-    </tbody>
-</table>
-<?php render_pagination($paged); ?>
+<?php $res_empty_text = 'No senior citizens found.'; require ROOT_PATH . '/app/Views/resident_cards_partial.php'; ?>
 
 <?php } $conn = null; ?>

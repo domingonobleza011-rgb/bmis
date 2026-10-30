@@ -235,7 +235,8 @@ hr { border-color: var(--border) !important; opacity: 1 !important; margin: 0.5r
     cursor: pointer; transition: all var(--transition); flex-shrink: 0;
 }
 .post-delete-btn:hover { background: var(--danger-pale); color: var(--danger); }
-.post-body { padding: 10px 20px 4px; font-size: 0.92rem; line-height: 1.55; color: var(--text-dark); white-space: pre-wrap; word-break: break-word; }
+.post-body { padding: 10px 20px 4px; font-size: 0.92rem; line-height: 1.55; color: var(--text-dark); white-space: pre-line; word-break: break-word; }
+.post-body .pb-toggle { display: inline-block; margin-top: 4px; }
 .post-gallery { display: grid; gap: 3px; padding: 12px 0 0; }
 .post-gallery > div { position: relative; overflow: hidden; }
 .post-gallery img { display: block; width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: filter var(--transition); }
@@ -365,7 +366,24 @@ hr { border-color: var(--border) !important; opacity: 1 !important; margin: 0.5r
                     </div>
 
                     <?php if (!empty($row['event'])): ?>
-                    <div class="post-body"><?= nl2br(bmis_linkify_announcement($row['event'])) ?></div>
+                    <?php
+                        // "See more": collapse posts longer than 20 words
+                        $ann_full  = (string) $row['event'];
+                        $ann_parts = preg_split('/(\s+)/u', $ann_full, -1, PREG_SPLIT_DELIM_CAPTURE);
+                        $ann_words = 0; $ann_short = ''; $ann_long = false;
+                        foreach ($ann_parts as $ann_tok) {
+                            if (trim($ann_tok) !== '') {
+                                if ($ann_words >= 20) { $ann_long = true; break; }
+                                $ann_words++;
+                            }
+                            $ann_short .= $ann_tok;
+                        }
+                    ?>
+                    <?php if ($ann_long): ?>
+                    <div class="post-body"><span class="pb-short"><?= bmis_format_announcement(rtrim($ann_short)) ?>&hellip;</span><span class="pb-full" style="display:none;"><?= bmis_format_announcement($ann_full) ?></span> <a href="#" class="pb-toggle" style="color:var(--navy-light,#2b5ea7);font-weight:600;white-space:nowrap;" onclick="return bmisTogglePost(this);">See more</a></div>
+                    <?php else: ?>
+                    <div class="post-body"><?= bmis_format_announcement($row['event']) ?></div>
+                    <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if ($hasImg && $imgCount > 0): ?>
@@ -655,4 +673,16 @@ function previewComposerImages(input) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://kit.fontawesome.com/67a9b7069e.js" crossorigin="anonymous"></script>
+<script>
+function bmisTogglePost(a) {
+    var body = a.closest('.post-body');
+    var shortEl = body.querySelector('.pb-short');
+    var fullEl = body.querySelector('.pb-full');
+    var expanding = fullEl.style.display === 'none';
+    fullEl.style.display = expanding ? 'inline' : 'none';
+    shortEl.style.display = expanding ? 'none' : 'inline';
+    a.textContent = expanding ? 'See less' : 'See more';
+    return false;
+}
+</script>
 <?php include(ROOT_PATH . '/dashboard_sidebar_end.php'); ?>

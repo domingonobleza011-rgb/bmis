@@ -229,16 +229,16 @@ hr {
 
     <div class="row">
         <div class="col">
-            <form method="POST" class="show-loader" data-loader-msg="Searching...">
+            <form method="POST" class="show-loader svc-toolbar" data-loader-msg="Searching...">
                 <div class="input-icons">
                     <i class="fa fa-search icon"></i>
                     <input type="search" class="form-control" name="keyword" style="border-radius: 30px;" value="" required>
                 </div>
-                <button class="btn btn-success" name="search_certofguardianship" style="width: 90px; font-size: 18px; border-radius:30px; margin-left:41.5%;">Search</button>
-                <a href="admn_certofguardianship.php" class="btn btn-info" style="width: 90px; font-size: 18px; border-radius:30px;">Reload</a>
-                <button type="button" class="btn" style="background:var(--navy); color:#fff; border-radius:30px; font-weight:600; padding:8px 24px;" data-bs-toggle="modal" data-bs-target="#addCertofguardianshipModal">
-                    Add Certificate
-                </button>
+                <div class="svc-actions">
+                    <button class="btn btn-success svc-btn svc-search" name="search_certofguardianship">Search</button>
+                    <a href="admn_certofguardianship.php" class="btn btn-info svc-btn svc-reload">Reload</a>
+                    <button type="button" class="btn svc-btn svc-add" style="background:var(--navy); color:#fff;" data-bs-toggle="modal" data-bs-target="#addCertofguardianshipModal">Add Certificate</button>
+                </div>
             </form>
             <br>
         </div>
@@ -462,4 +462,5 @@ document.getElementById('admGuardResident').addEventListener('change', function 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://kit.fontawesome.com/67a9b7069e.js" crossorigin="anonymous"></script>
 
+<?php include(ROOT_PATH . '/admn_svc_mobile.php'); ?>
 <?php include(ROOT_PATH . '/dashboard_sidebar_end.php'); ?>

@@ -76,28 +76,29 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
    ══════════════════════════════════════════════════════════ */
 .table-card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
 .table-responsive-wrap { overflow-x:auto; }
-.cmp-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.85rem; min-width:1080px; }
+.cmp-table { width:100%; border-collapse:separate; border-spacing:0; font-size:.78rem; min-width:1080px; }
 .cmp-table thead th {
-    background:var(--navy); color:#fff; font-weight:600; letter-spacing:.4px;
-    font-size:.72rem; text-transform:uppercase; text-align:left; padding:13px 16px;
-    white-space:nowrap; position:sticky; top:0; z-index:2;
+    background:linear-gradient(135deg,var(--navy),#163f78); color:#fff; font-weight:700; letter-spacing:.03em;
+    font-size:.7rem; text-transform:uppercase; text-align:left; padding:8px 10px;
+    border-bottom:2px solid #c9943a; white-space:nowrap;
 }
 .cmp-table thead th:first-child { border-top-left-radius:0; }
+.cmp-table tbody tr:nth-child(even) { background:#f4f8fd; }
 .cmp-table tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
 .cmp-table tbody tr:last-child { border-bottom:none; }
-.cmp-table tbody tr:hover { background:var(--navy-pale); }
+.cmp-table tbody tr:hover { background:#fbf1de; }
 .cmp-table tbody tr.row-pending  { border-left:4px solid #f0a500; }
 .cmp-table tbody tr.row-inprog   { border-left:4px solid var(--inprog); }
 .cmp-table tbody tr.row-resolved { border-left:4px solid #27ae60; }
-.cmp-table td { padding:13px 16px; vertical-align:top; }
-.td-id { color:#aaa; font-weight:700; font-size:.78rem; white-space:nowrap; }
-.td-date { color:#888; font-size:.76rem; white-space:nowrap; }
-.td-name { font-weight:700; color:var(--navy); font-size:.88rem; }
-.td-contact { color:#888; font-size:.76rem; margin-top:2px; }
+.cmp-table td { padding:5px 10px; font-size:.78rem; line-height:1.35; vertical-align:middle; }
+.td-id { color:#aaa; font-weight:700; font-size:.72rem; white-space:nowrap; }
+.td-date { color:#888; font-size:.72rem; white-space:nowrap; }
+.td-name { font-weight:700; color:var(--navy); font-size:.82rem; }
+.td-contact { color:#888; font-size:.72rem; margin-top:1px; }
 .td-desc { color:#333; max-width:280px; }
 .td-desc .desc-clip {
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-    overflow:hidden; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical;
+    overflow:hidden; line-height:1.35;
 }
 .td-loc { color:#666; font-size:.8rem; }
 .td-loc i { color:#aaa; margin-right:3px; }
@@ -134,6 +135,62 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
 .modal-header { background:var(--navy); color:#fff; border-radius:12px 12px 0 0; }
 .modal-header .btn-close { filter:invert(1); }
 @media(max-width:600px) { .page-header { padding:20px; } }
+
+/* ══════════ MOBILE ONLY (desktop untouched) ══════════ */
+.cm-toggle, .cm-filter-toggle, .cm-menu { display:none; }
+@media (max-width:767.98px) {
+    /* 1. four stat boxes: identical size, 2x2 grid */
+    .cm-stats { display:grid !important; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 16px !important; }
+    .cm-stats > [class*="col-"] { width:auto !important; max-width:none !important; flex:none !important; padding:0 !important; margin:0 !important; }
+    .cm-stats .stat-card { height:100%; min-height:78px; padding:12px; gap:10px; box-sizing:border-box; }
+    .cm-stats .stat-card:hover { transform:none; }
+    .cm-stats .stat-card .stat-icon { width:40px; height:40px; font-size:1.2rem; border-radius:10px; }
+    .cm-stats .stat-card .stat-val { font-size:1.4rem; }
+    .cm-stats .stat-card .stat-lbl { font-size:.66rem; white-space:nowrap; }
+
+    /* 2. minimized search / filter */
+    .filter-bar { padding:10px; gap:8px; margin-bottom:14px; }
+    .filter-bar .filter-tabs { flex:1 1 100%; flex-wrap:nowrap; overflow-x:auto; margin-right:0 !important; padding-bottom:2px; -webkit-overflow-scrolling:touch; }
+    .filter-bar .filter-tab { flex:0 0 auto; padding:6px 12px; font-size:.76rem; }
+    .cm-filter-toggle {
+        display:inline-flex; align-items:center; gap:6px; position:relative;
+        padding:6px 12px; border-radius:8px; border:1.5px solid #dde3ee; background:#fff;
+        color:var(--navy); font-size:.8rem; font-weight:600;
+    }
+    .cm-filter-toggle .cm-dot { width:8px; height:8px; border-radius:50%; background:var(--gold); }
+    .filter-bar:not(.cm-open) .cm-collapsible { display:none !important; }
+    .filter-bar.cm-open .cm-fields { flex:1 1 100% !important; min-width:0 !important; }
+
+    /* 3. table: only Resident name + Actions */
+    .table-responsive-wrap { overflow-x:visible; }
+    .cmp-table { min-width:0 !important; }
+    .cmp-table .cm-hide { display:none !important; }
+    .cmp-table thead th, .cmp-table td { padding:10px 12px; }
+    .cmp-table .td-contact { display:none; }
+    .cmp-table td.td-name-cell .td-name { font-size:.9rem; }
+    .cmp-table th.th-actions, .cmp-table td.td-actions { width:60px; text-align:center; }
+    .cm-desk { display:none !important; }
+    .cm-toggle {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:36px; height:36px; padding:0; border-radius:50%;
+        border:1px solid #dde3ee; background:#fff; color:#4a5568; cursor:pointer;
+    }
+    .cm-toggle[aria-expanded="true"] { background:#e8eef7; color:var(--navy); }
+    .cm-menu.cm-open {
+        display:block; position:fixed; z-index:100000; min-width:180px; padding:6px;
+        background:#fff; border:1px solid #e8ecf0; border-radius:12px; text-align:left;
+        box-shadow:0 8px 28px rgba(15,45,90,.22);
+    }
+    .cm-menu form { margin:0; display:block; }
+    .cm-item {
+        display:flex; align-items:center; gap:10px; width:100%;
+        padding:10px 12px; border:0; background:transparent; text-align:left;
+        font-size:.92rem; color:#222; border-radius:8px; cursor:pointer;
+    }
+    .cm-item:hover, .cm-item:active { background:#f1f4f9; }
+    .cm-item i { width:18px; text-align:center; }
+    .cm-item.cm-danger { color:#c0392b; }
+}
 </style>
 </head>
 <body>
@@ -155,7 +212,7 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
     <?php endif; ?>
  
     <!-- Stat Cards -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-4 cm-stats">
         <div class="col-6 col-sm-3">
             <div class="stat-card stat-all">
                 <div class="stat-icon"><i class="bi bi-clipboard2-data"></i></div>
@@ -191,13 +248,17 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
             <a href="?status=resolved"    class="filter-tab tab-resolved <?= $filter_status==='resolved'    ? 'active' : '' ?>"><i class="bi bi-check-circle me-1"></i>Resolved</a>
             <a href="?assigned=unassigned" class="filter-tab <?= $filter_assigned==='unassigned' ? 'active' : '' ?>"><i class="bi bi-person-x me-1"></i>Unassigned</a>
         </div>
-        <div style="flex:1;min-width:180px;">
+        <button type="button" class="cm-filter-toggle" onclick="this.closest('.filter-bar').classList.toggle('cm-open')">
+            <i class="bi bi-search"></i> Search / Filter
+            <?php if ($filter_search !== '' || $filter_category !== ''): ?><span class="cm-dot"></span><?php endif; ?>
+        </button>
+        <div class="cm-collapsible cm-fields" style="flex:1;min-width:180px;">
             <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;">SEARCH</label>
             <input type="text" name="search" class="form-control form-control-sm"
                    placeholder="Name, description, location…"
                    value="<?= htmlspecialchars($filter_search) ?>">
         </div>
-        <div style="min-width:160px;">
+        <div class="cm-collapsible cm-fields" style="min-width:160px;">
             <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;">CATEGORY</label>
             <select name="category" class="form-select form-select-sm">
                 <option value="">All Categories</option>
@@ -207,8 +268,8 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
             </select>
         </div>
         <input type="hidden" name="status" value="<?= htmlspecialchars($filter_status) ?>">
-        <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i> Filter</button>
-        <a href="admn_complaints.php" class="btn-filter-clear">Clear</a>
+        <button type="submit" class="btn-filter cm-collapsible"><i class="bi bi-search me-1"></i> Filter</button>
+        <a href="admn_complaints.php" class="btn-filter-clear cm-collapsible">Clear</a>
     </form>
  
     <!-- Complaint Table -->
@@ -224,14 +285,14 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
     <table class="cmp-table" id="complaint-list-container">
         <thead>
             <tr>
-                <th>ID / Date</th>
+                <th class="cm-hide">ID / Date</th>
                 <th>Resident</th>
-                <th>Category / Location</th>
-                <th>Description</th>
-                <th>Photo</th>
-                <th>Status</th>
-                <th>Assigned To</th>
-                <th>Actions</th>
+                <th class="cm-hide">Category / Location</th>
+                <th class="cm-hide">Description</th>
+                <th class="cm-hide">Photo</th>
+                <th class="cm-hide">Status</th>
+                <th class="cm-hide">Assigned To</th>
+                <th class="th-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -243,22 +304,22 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
             $desc_needs_expand = mb_strlen($c['description']) > 90;
         ?>
         <tr class="<?= $row_class ?>">
-            <td>
+            <td class="cm-hide">
                 <div class="td-id">#<?= $c['id'] ?></div>
                 <div class="td-date"><?= date('M d, Y', strtotime($c['date_submitted'])) ?><br><?= date('h:i A', strtotime($c['date_submitted'])) ?></div>
             </td>
-            <td>
+            <td class="td-name-cell">
                 <div class="td-name"><?= htmlspecialchars($c['full_name']) ?></div>
                 <?php if ($c['contact_number']): ?>
                 <div class="td-contact"><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($c['contact_number']) ?></div>
                 <?php endif; ?>
             </td>
-            <td>
+            <td class="cm-hide">
                 <span class="cat-pill"><?= htmlspecialchars($c['category']) ?></span>
                 <?php if ($c['location']): ?><div class="td-loc mt-1"><i class="bi bi-geo-alt"></i><?= htmlspecialchars($c['location']) ?></div><?php endif; ?>
                 <?php if ($c['address']): ?><div class="td-loc"><i class="bi bi-house"></i><?= htmlspecialchars($c['address']) ?></div><?php endif; ?>
             </td>
-            <td class="td-desc">
+            <td class="td-desc cm-hide">
                 <div class="desc-clip"><?= htmlspecialchars($desc_short) ?><?= $desc_needs_expand ? '…' : '' ?></div>
                 <?php if ($desc_needs_expand): ?>
                 <span class="expand-toggle" onclick="toggleDesc('<?= $modal_id ?>-desc', this)">Show more <i class="bi bi-chevron-down"></i></span>
@@ -267,7 +328,7 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
                 <div class="remarks-inline"><strong><i class="bi bi-chat-left-text me-1"></i>Remarks:</strong> <?= nl2br(htmlspecialchars($c['admin_remarks'])) ?></div>
                 <?php endif; ?>
             </td>
-            <td class="td-photo">
+            <td class="td-photo cm-hide">
                 <?php if (!empty($c['photo_path'])): ?>
                 <img src="<?= htmlspecialchars($c['photo_path']) ?>" alt="Photo"
                      data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-photo">
@@ -275,7 +336,7 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
                 <i class="bi bi-image no-photo"></i>
                 <?php endif; ?>
             </td>
-            <td>
+            <td class="cm-hide">
                 <?php if ($status === 'pending'): ?>
                     <span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>
                 <?php elseif ($status === 'in_progress'): ?>
@@ -284,7 +345,7 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
                     <span class="badge-resolved"><i class="bi bi-check-circle me-1"></i>Resolved</span>
                 <?php endif; ?>
             </td>
-            <td class="td-assigned">
+            <td class="td-assigned cm-hide">
                 <?php if (!empty($c['assigned_name'])): ?>
                 <span class="assign-name-sm"><i class="bi bi-person-check-fill me-1"></i><?= htmlspecialchars($c['assigned_name']) ?></span>
                 <?php if ($c['assigned_at']): ?><span class="assign-meta-sm"><?= date('M d, h:i A', strtotime($c['assigned_at'])) ?></span><?php endif; ?>
@@ -293,6 +354,7 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
                 <?php endif; ?>
             </td>
             <td class="td-actions">
+                <span class="cm-desk">
                 <?php if ($status === 'pending' || $status === 'in_progress'): ?>
                 <button class="action-icon-btn ai-assign" title="<?= empty($c['assigned_name']) ? 'Assign' : 'Reassign' ?>"
                         data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-assign">
@@ -327,6 +389,41 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
                         data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-delete">
                     <i class="bi bi-trash3"></i>
                 </button>
+                </span>
+
+                <!-- MOBILE ONLY: 3-dots menu -->
+                <button type="button" class="cm-toggle" aria-label="Actions" aria-haspopup="true" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <div class="cm-menu">
+                    <button type="button" class="cm-item" data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-view">
+                        <i class="bi bi-eye text-primary"></i> View
+                    </button>
+                    <?php if ($status === 'pending' || $status === 'in_progress'): ?>
+                    <button type="button" class="cm-item" data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-assign">
+                        <i class="bi bi-person-plus" style="color:var(--inprog);"></i> <?= empty($c['assigned_name']) ? 'Assign' : 'Reassign' ?>
+                    </button>
+                    <?php endif; ?>
+                    <?php if (!empty($c['assigned_name']) && $status !== 'resolved'): ?>
+                    <form method="POST" class="show-loader" data-loader-msg="Unassigning complaint...">
+                        <input type="hidden" name="complaint_id" value="<?= $c['id'] ?>">
+                        <button type="submit" name="action_unassign" class="cm-item"><i class="bi bi-person-dash"></i> Unassign</button>
+                    </form>
+                    <?php endif; ?>
+                    <?php if ($status !== 'resolved'): ?>
+                    <button type="button" class="cm-item" data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-resolve">
+                        <i class="bi bi-check-circle" style="color:#1f8f4e;"></i> Resolve
+                    </button>
+                    <?php else: ?>
+                    <form method="POST" class="show-loader" data-loader-msg="Updating status...">
+                        <input type="hidden" name="complaint_id" value="<?= $c['id'] ?>">
+                        <button type="submit" name="action_pending" class="cm-item"><i class="bi bi-arrow-counterclockwise" style="color:#c88900;"></i> Set to Pending</button>
+                    </form>
+                    <?php endif; ?>
+                    <button type="button" class="cm-item cm-danger" data-bs-toggle="modal" data-bs-target="#<?= $modal_id ?>-delete">
+                        <i class="bi bi-trash3"></i> Delete
+                    </button>
+                </div>
             </td>
         </tr>
         <tr class="desc-row-full" id="<?= $modal_id ?>-desc">
@@ -428,6 +525,71 @@ body { font-family:'DM Sans',system-ui,sans-serif !important; background:var(--c
             </div>
         </div>
 
+        <!-- ── View Modal (all details) ── -->
+        <div class="modal fade" id="<?= $modal_id ?>-view" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Complaint #<?= $c['id'] ?></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <?php if ($status === 'pending'): ?>
+                                <span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>
+                            <?php elseif ($status === 'in_progress'): ?>
+                                <span class="badge-inprog"><i class="bi bi-person-check me-1"></i>In Progress</span>
+                            <?php else: ?>
+                                <span class="badge-resolved"><i class="bi bi-check-circle me-1"></i>Resolved</span>
+                            <?php endif; ?>
+                        </div>
+                        <dl class="row mb-0" style="font-size:.9rem;">
+                            <dt class="col-5">Submitted</dt>
+                            <dd class="col-7"><?= date('M d, Y h:i A', strtotime($c['date_submitted'])) ?></dd>
+                            <dt class="col-5">Resident</dt>
+                            <dd class="col-7"><?= htmlspecialchars($c['full_name']) ?></dd>
+                            <dt class="col-5">Contact</dt>
+                            <dd class="col-7"><?= !empty($c['contact_number']) ? htmlspecialchars($c['contact_number']) : '—' ?></dd>
+                            <dt class="col-5">Category</dt>
+                            <dd class="col-7"><?= htmlspecialchars($c['category']) ?></dd>
+                            <dt class="col-5">Location</dt>
+                            <dd class="col-7"><?= !empty($c['location']) ? htmlspecialchars($c['location']) : '—' ?></dd>
+                            <dt class="col-5">Address</dt>
+                            <dd class="col-7"><?= !empty($c['address']) ? htmlspecialchars($c['address']) : '—' ?></dd>
+                            <dt class="col-5">Description</dt>
+                            <dd class="col-7" style="word-break:break-word;"><?= nl2br(htmlspecialchars($c['description'])) ?></dd>
+                            <dt class="col-5">Assigned To</dt>
+                            <dd class="col-7">
+                                <?php if (!empty($c['assigned_name'])): ?>
+                                    <?= htmlspecialchars($c['assigned_name']) ?>
+                                    <?php if (!empty($c['assigned_at'])): ?><br><small class="text-muted"><?= date('M d, Y h:i A', strtotime($c['assigned_at'])) ?></small><?php endif; ?>
+                                    <?php if (!empty($c['assigned_by'])): ?><br><small class="text-muted">by <?= htmlspecialchars($c['assigned_by']) ?></small><?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted fst-italic">Unassigned</span>
+                                <?php endif; ?>
+                            </dd>
+                            <dt class="col-5">Admin Remarks</dt>
+                            <dd class="col-7"><?= !empty($c['admin_remarks']) ? nl2br(htmlspecialchars($c['admin_remarks'])) : '—' ?></dd>
+                            <?php if (!empty($c['date_updated'])): ?>
+                            <dt class="col-5">Last Updated</dt>
+                            <dd class="col-7"><?= date('M d, Y h:i A', strtotime($c['date_updated'])) ?></dd>
+                            <?php endif; ?>
+                        </dl>
+                        <?php if (!empty($c['photo_path'])): ?>
+                        <div class="mt-3">
+                            <div class="fw-bold mb-2" style="font-size:.9rem;">Photo</div>
+                            <img src="<?= htmlspecialchars($c['photo_path']) ?>" alt="Complaint photo"
+                                 style="max-width:100%;max-height:280px;object-fit:contain;border-radius:8px;border:1px solid #dde3ee;">
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ── Photo Modal ── -->
         <?php if (!empty($c['photo_path'])): ?>
         <div class="modal fade" id="<?= $modal_id ?>-photo" tabindex="-1">
@@ -500,6 +662,44 @@ function toggleDesc(rowId, el) {
     }
     poll();
     setInterval(poll, 60000);
+})();
+
+(function () {
+    var open = null;
+    function closeMenu() {
+        if (!open) return;
+        open.menu.classList.remove('cm-open');
+        open.menu.style.top = open.menu.style.left = '';
+        open.btn.setAttribute('aria-expanded', 'false');
+        open = null;
+    }
+    document.querySelectorAll('.cm-toggle').forEach(function (btn) {
+        var menu = btn.parentElement.querySelector('.cm-menu');
+        if (!menu) return;
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (open && open.menu === menu) { closeMenu(); return; }
+            closeMenu();
+            menu.classList.add('cm-open');
+            btn.setAttribute('aria-expanded', 'true');
+            open = { btn: btn, menu: menu };
+            var r = btn.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight, pad = 8;
+            var left = Math.min(Math.max(pad, r.right - w), window.innerWidth - w - pad);
+            var top = r.bottom + 4;
+            if (top + h > window.innerHeight - pad) top = Math.max(pad, r.top - h - 4);
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        });
+        // close after choosing (deferred so the modal trigger / form submit still fires)
+        menu.addEventListener('click', function (e) {
+            if (e.target.closest('.cm-item')) setTimeout(closeMenu, 0);
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (open && !open.menu.contains(e.target)) closeMenu();
+    });
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
 })();
 </script>
 

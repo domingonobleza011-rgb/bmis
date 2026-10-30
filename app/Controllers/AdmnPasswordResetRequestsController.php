@@ -8,7 +8,7 @@ ini_set('display_errors', 1);
 
 require_once ROOT_PATH . '/classes/security.php';
 bmis_session_start();
-$userdetails = bmis_require_admin();
+$userdetails = bmis_require_staff_or_admin();
 date_default_timezone_set('Asia/Manila');
 include(ROOT_PATH . '/autoloader.php');
 require(ROOT_PATH . '/classes/conn.php');
@@ -58,9 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_reset'])) {
 
 // ── Fetch all requests ───────────────────────────────────────────────────────
 $requests = $conn->query(
-    "SELECT r.*, res.email, res.phone_number
+    "SELECT r.*, res.email, COALESCE(res.phone_number, r.phone_number) AS phone_number
      FROM tbl_password_reset_requests r
-     JOIN tbl_resident res ON res.id_resident = r.id_resident
+     LEFT JOIN tbl_resident res ON res.id_resident = r.id_resident
      ORDER BY FIELD(r.status,'pending','approved','rejected'), r.requested_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 

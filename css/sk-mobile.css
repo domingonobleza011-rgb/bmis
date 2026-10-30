@@ -1,0 +1,248 @@
+/* ============================================================
+   SK PORTAL — MOBILE / TABLET ADAPTATION
+   Loaded by dashboard_sidebar_start_sk.php AFTER portal-theme.css.
+   Breakpoints: <=991px tablet (drawer nav), <=767px phone,
+                <=575px small phone, <=380px tiny.
+   Works with Default / Light / Dark themes (uses --tm-* tokens
+   with sensible fallbacks for Default mode).
+   ============================================================ */
+
+/* ---------- Always: never let the page scroll sideways ---------- */
+html, body { max-width: 100%; overflow-x: hidden; }
+#content-wrapper { min-width: 0; }
+.container-fluid { min-width: 0; }
+img, video, svg { max-width: 100%; }
+.post-content, .post-title, .prog-title-cell, .prog-desc-cell { overflow-wrap: anywhere; }
+
+/* ---------- Drawer backdrop + scroll lock (tablet & phone) ---------- */
+.sk-backdrop { display: none; }
+@media (max-width: 991.98px) {
+    .sk-backdrop {
+        display: block; position: fixed; inset: 0; z-index: 1040;
+        background: rgba(8, 20, 45, .55);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility .25s;
+    }
+    .sidebar.toggled + .sk-backdrop { opacity: 1; visibility: visible; }
+    body.sk-drawer-open { overflow: hidden; touch-action: none; }
+    .sidebar { box-shadow: none; }
+    .sidebar.toggled { box-shadow: 8px 0 30px rgba(0, 0, 0, .35); }
+    /* comfortable tap targets in the drawer */
+    .sidebar .nav-item .nav-link { min-height: 46px; display: flex; align-items: center; }
+}
+
+/* ---------- Tablet (<= 991px) ---------- */
+@media (max-width: 991.98px) {
+    .sk-page-header, .page-header { padding: 20px 22px !important; }
+    .panel { padding: 18px !important; }
+    /* programs/announcement/etc. tables: keep scroll box tidy */
+    .prog-table-wrap { -webkit-overflow-scrolling: touch; }
+}
+
+/* ---------- Phone (<= 767px) ---------- */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding-left: 12px !important; padding-right: 12px !important;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+    .row { --bs-gutter-x: .75rem; }
+
+    /* Page header banner */
+    .sk-page-header, .page-header {
+        padding: 16px !important; margin: 0 0 14px !important;
+        border-radius: 14px !important; gap: 12px !important; align-items: center;
+    }
+    .sk-page-header h2, .page-header h2 { font-size: 1.12rem !important; line-height: 1.25; }
+    .sk-page-header p, .page-header p { font-size: .76rem !important; line-height: 1.4; margin-top: 3px; }
+    .page-header .hdr-icon, .sk-page-header .hdr-icon {
+        width: 42px !important; height: 42px !important; border-radius: 11px !important; font-size: 1.15rem !important;
+    }
+
+    /* Panels */
+    .panel { padding: 14px !important; border-radius: 12px !important; }
+    .panel-title { font-size: .9rem; margin-bottom: 12px; }
+
+    /* Toolbars: filter tabs become one swipeable row, actions go full width */
+    .panel > .d-flex { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
+    .panel > .d-flex > .d-flex:has(> .filter-tab) {
+        flex-wrap: nowrap !important; overflow-x: auto; gap: 8px !important;
+        margin: 0 -14px; padding: 2px 14px 6px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .panel > .d-flex > .d-flex:has(> .filter-tab)::-webkit-scrollbar { display: none; }
+    .filter-tab { flex: 0 0 auto; white-space: nowrap; min-height: 40px; display: inline-flex; align-items: center; }
+    .panel > .d-flex > .btn-sk, .panel > .d-flex > .btn { width: 100%; min-height: 44px; }
+
+    /* Youth records toolbar */
+    .panel form.d-flex.flex-wrap { width: 100%; }
+    .panel form .search-box, .search-box { width: 100% !important; flex: 1 1 100%; min-height: 44px; }
+    .panel form .btn-sk { flex: 1 1 auto; min-height: 44px; }
+    .panel > .d-flex > .d-flex.align-items-center.flex-wrap { justify-content: space-between; }
+    .panel > .d-flex > .d-flex.align-items-center.flex-wrap > span { flex: 1 1 100%; }
+    .panel > .d-flex > .d-flex.align-items-center.flex-wrap > .btn { flex: 1 1 calc(50% - 8px); min-height: 42px; }
+
+    /* Enrollment filter bar */
+    .filter-bar form.d-flex { flex-direction: column; align-items: stretch !important; }
+    .filter-bar form.d-flex > div, .filter-bar form.d-flex > .btn, .filter-bar form.d-flex > a { width: 100%; }
+    .filter-bar .form-select { min-width: 0 !important; width: 100% !important; min-height: 44px; }
+    .filter-bar .ms-auto { margin-left: 0 !important; }
+    .filter-bar .btn-sk, .filter-bar .btn { min-height: 44px; }
+
+    /* Stat cards */
+    .stat-card { padding: 12px !important; gap: 10px !important; border-radius: 12px !important; height: 100%; }
+    .stat-icon, .stat-card .stat-icon { width: 38px !important; height: 38px !important; border-radius: 10px !important; font-size: 1.05rem !important; }
+    .stat-val, .stat-card .stat-val { font-size: 1.3rem !important; }
+    .stat-lbl, .stat-card .stat-lbl { font-size: .6rem !important; letter-spacing: .03em !important; }
+    .stat-card:hover { transform: none; }
+
+    /* Quick actions: full-width stacked buttons */
+    .quick-links { flex-direction: column; gap: 8px; }
+    .quick-link { width: 100%; min-height: 46px; justify-content: flex-start; }
+
+    /* Announcement cards */
+    .post-card { padding: 16px !important; border-radius: 14px !important; }
+    .post-card:hover { transform: none; }
+    .post-title { font-size: 1rem !important; }
+    .post-actions { display: none !important; }   /* controls stay in the DOM; the three-dots menu in the card header triggers them */
+    .post-card .pinned-ribbon { right: 62px; }     /* leave room for the dots button */
+
+    /* Small action buttons: bigger tap area */
+    .action-btn { min-height: 38px; min-width: 38px; padding: 7px 12px !important; }
+    .btn-sk { min-height: 42px; }
+
+    /* Modals: near full-screen sheets */
+    .modal-dialog { margin: 8px auto !important; width: calc(100% - 16px) !important; }
+    .modal-dialog.modal-dialog-centered { min-height: calc(100% - 16px); }
+    .modal-content { border-radius: 14px; }
+    .modal-body { max-height: calc(100dvh - 170px) !important; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .modal-footer { flex-wrap: wrap; gap: 8px; }
+    .modal-footer .btn { flex: 1 1 calc(50% - 8px); min-height: 44px; }
+    .modal-body .row > [class*="col-"] { width: 100%; flex: 0 0 100%; max-width: 100%; }
+
+    /* Prevent iOS zoom-on-focus; comfortable inputs */
+    .modal input:not([type=checkbox]):not([type=radio]), .modal select, .modal textarea,
+    .filter-bar input, .filter-bar select, .search-box { font-size: 16px !important; min-height: 44px; }
+    .modal textarea { min-height: 96px; }
+
+    /* ===== Tables -> stacked cards (labels added by js/sk-mobile.js) ===== */
+    .prog-table-wrap, .table-responsive, .tbl-scroll { overflow-x: visible !important; }
+    table.sk-cards, table.sk-cards tbody, table.sk-cards tr, table.sk-cards td { display: block; width: 100%; }
+    table.sk-cards { border: 0 !important; background: transparent !important; }
+    table.sk-cards thead { display: none; }
+    table.sk-cards tbody tr {
+        background: var(--tm-surface, #fff);
+        border: 1px solid var(--tm-border, #e3e8ef);
+        border-left: 4px solid var(--tm-muted, #1a4480);
+        border-radius: 12px; margin-bottom: 12px; padding: 4px 14px;
+        box-shadow: var(--tm-shadow, 0 2px 8px rgba(26, 68, 128, .07));
+    }
+    table.sk-cards tbody tr:hover td { background: transparent !important; }
+    table.sk-cards tr.row-upcoming  { border-left-color: #1967d2; }
+    table.sk-cards tr.row-ongoing   { border-left-color: #1a6b3a; }
+    table.sk-cards tr.row-completed { border-left-color: #888; }
+    table.sk-cards tr.row-cancelled { border-left-color: #c0392b; }
+    table.sk-cards tbody td {
+        display: flex !important; align-items: flex-start; justify-content: space-between; gap: 14px;
+        padding: 9px 0 !important; border: 0 !important; border-bottom: 1px dashed var(--tm-row-border, #e6ebf2) !important;
+        font-size: .84rem !important; text-align: right; white-space: normal !important;
+    }
+    table.sk-cards tbody td:last-child { border-bottom: 0 !important; }
+    table.sk-cards tbody td::before {
+        content: attr(data-label); flex: 0 0 34%; max-width: 34%; text-align: left;
+        font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+        color: var(--tm-muted, #6b7a90); padding-top: 2px;
+    }
+    table.sk-cards tbody td[data-label=""]::before { display: none; }
+    table.sk-cards tbody td[data-label=""] { justify-content: flex-start; }
+    /* page-level rules like `table tbody tr td:first-child {width:44px;text-align:center}` must not squash the card rows */
+    table.sk-cards tbody tr td:first-child { width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; text-align: right; }
+    table.sk-cards tbody td .form-check-input { margin: 0 0 0 auto !important; width: 22px !important; height: 22px !important; }
+    html[data-theme] table.sk-cards.prog-table tbody tr[class*="row-"] td:first-child { border-left: 0 !important; }
+    html[data-theme] table.sk-cards tbody tr { border-left-color: var(--tm-muted) !important; }
+    table.sk-cards tbody td > .sk-val { flex: 1 1 auto; min-width: 0; text-align: right; overflow-wrap: anywhere; }
+    table.sk-cards tbody td > .sk-val .d-flex { justify-content: flex-end; flex-wrap: wrap; }
+    table.sk-cards tbody td.sk-wide { flex-direction: column; align-items: stretch; text-align: left; }
+    table.sk-cards tbody td.sk-wide::before { max-width: 100%; flex-basis: auto; margin-bottom: 4px; }
+    table.sk-cards tbody td.sk-wide > .sk-val { text-align: left; }
+    table.sk-cards .prog-desc-cell { max-width: none; }
+    table.sk-cards tbody td[colspan] { display: block !important; text-align: center; }
+    table.sk-cards tbody td[colspan]::before { display: none; }
+    table.sk-cards tbody tr:has(> td[colspan]) { border-left-width: 1px; }
+    /* name cell with avatar */
+    table.sk-cards .d-flex.align-items-center.gap-2 { justify-content: flex-end; text-align: right; }
+
+    /* Dashboard "recent" tables are small: keep them as compact rows */
+    .panel .table-sm.sk-cards tbody tr { padding: 2px 12px; margin-bottom: 8px; }
+}
+
+/* ---------- Youth records (phone): only Name + Actions; full info lives in the View modal ---------- */
+@media (max-width: 767.98px) {
+    table.sk-cards.sk-youth-table tbody td:not(:nth-child(1)):not(:nth-child(3)):not(:last-child) { display: none !important; }
+    table.sk-cards.sk-youth-table tbody tr { display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; align-items: center; padding: 12px 10px 12px 14px; }
+    table.sk-cards.sk-youth-table tbody td { border-bottom: 0 !important; padding: 0 !important; }
+    table.sk-cards.sk-youth-table tbody td::before { display: none !important; }
+    table.sk-cards.sk-youth-table tbody td:nth-child(1) { width: auto !important; justify-content: flex-start; }
+    table.sk-cards.sk-youth-table tbody td:nth-child(1) .form-check-input { margin: 0 !important; }
+    table.sk-cards.sk-youth-table tbody td:nth-child(3) { justify-content: flex-start; text-align: left; min-width: 0; }
+    table.sk-cards.sk-youth-table tbody td:nth-child(3) .d-flex { justify-content: flex-start !important; text-align: left; }
+    table.sk-cards.sk-youth-table tbody td:last-child { width: auto !important; justify-content: flex-end; }
+    table.sk-cards.sk-youth-table tbody td:last-child > .sk-val { display: block; }
+    /* the original buttons stay in the DOM (the menu triggers them) but are hidden on phones */
+    table.sk-cards.sk-youth-table tbody td:last-child .action-btn { display: none !important; }
+    table.sk-cards.sk-youth-table tbody td[colspan] { display: block !important; grid-column: 1 / -1; }
+}
+
+/* ---------- Enrollment / Programs (phone): primary info + status, details in View, actions in three-dots ---------- */
+@media (max-width: 767.98px) {
+    table.sk-cards.sk-rowmenu tbody tr { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 6px; align-items: center; padding: 12px 10px 12px 14px; }
+    table.sk-cards.sk-rowmenu tbody td { padding: 0 !important; border-bottom: 0 !important; justify-content: flex-start; text-align: left; min-width: 0; }
+    table.sk-cards.sk-rowmenu tbody td::before { display: none !important; }
+    table.sk-cards.sk-rowmenu tbody td > .sk-val { text-align: left; }
+    table.sk-cards.sk-rowmenu tbody td.sk-wide { flex-direction: row; }
+    table.sk-cards.sk-rowmenu tbody td:last-child { grid-column: 2; grid-row: 1 / span 2; width: auto !important; justify-content: flex-end; }
+    table.sk-cards.sk-rowmenu tbody td:last-child .action-btn { display: none !important; }
+    table.sk-cards.sk-rowmenu tbody td:last-child > .sk-val { display: block; }
+    table.sk-cards.sk-rowmenu tbody td[colspan] { grid-column: 1 / -1; grid-row: auto; display: block !important; text-align: center; }
+    /* enrollment: show Youth Name (2) + Status (6) ; programs: show Program (2) + Status (7) */
+    table.sk-enr-table tbody td:not(:nth-child(2)):not(:nth-child(6)):not(:last-child):not([colspan]),
+    table.sk-prog-table tbody td:not(:nth-child(2)):not(:nth-child(7)):not(:last-child):not([colspan]) { display: none !important; }
+    table.sk-cards.sk-rowmenu tbody td:nth-child(2) { grid-column: 1; grid-row: 1; }
+    table.sk-enr-table tbody td:nth-child(6), table.sk-prog-table tbody td:nth-child(7) { grid-column: 1; grid-row: 2; }
+}
+/* three-dots button + generic details list (used by tables and the View modal) */
+.dots-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--tm-surface2, #eef2f8); color: var(--tm-head, #1a4480); display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; }
+.dots-btn:active, .dots-btn[aria-expanded="true"] { background: var(--tm-btn-bg, #1a4480); color: var(--tm-btn-fg, #fff); }
+.sk-dots .dropdown-menu { min-width: 160px; border-radius: 12px; padding: 6px; }
+.sk-dots .dropdown-item { border-radius: 8px; padding: 10px 12px; font-size: .9rem; }
+.sk-detail-list > div { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px dashed #e6ebf2; }
+.sk-detail-list > div:last-child { border-bottom: 0; }
+.sk-detail-list dt { flex: 0 0 36%; margin: 0; padding-top: 2px; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7a90; }
+.sk-detail-list dd { flex: 1; margin: 0; text-align: right; font-size: .9rem; overflow-wrap: anywhere; }
+
+/* ---------- Small phones (<= 575px) ---------- */
+@media (max-width: 575.98px) {
+    /* two stat tiles per row instead of one long column */
+    .row.g-3 > [class*="col-sm-6"], .row.g-3 > [class*="col-6"] { width: 50%; flex: 0 0 50%; max-width: 50%; }
+    .stat-card { flex-direction: column; align-items: flex-start; text-align: left; gap: 8px !important; }
+    .modal-footer .btn { flex: 1 1 100%; }
+    .btn-sk, .btn { white-space: normal; }
+}
+
+/* ---------- Tiny phones (<= 380px) ---------- */
+@media (max-width: 380px) {
+    .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
+    .sk-page-header, .page-header { padding: 13px !important; }
+    .sk-page-header h2, .page-header h2 { font-size: 1.02rem !important; }
+    table.sk-cards tbody td::before { flex-basis: 38%; max-width: 38%; }
+}
+
+/* ---------- Landscape phones: keep modals scrollable ---------- */
+@media (max-height: 480px) and (orientation: landscape) {
+    .modal-body { max-height: calc(100dvh - 130px) !important; }
+    .sidebar .nav-item .nav-link { min-height: 40px; }
+}
+
+/* ---------- Respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .sk-backdrop, .sidebar { transition: none !important; }
+}

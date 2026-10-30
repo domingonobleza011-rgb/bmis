@@ -1,0 +1,14 @@
+@import url("skeleton-pages.css?v=20261026c");
+/* ===== Skeleton loading screen for the public pages (login / register / forgot / landing) =====
+   The skeleton itself is built per destination page by js/skeleton-pages.js. */
+#page-loader {
+    --sk-base: #e4e8ef; --sk-shine: #f6f8fc; --sk-card: #ffffff; --sk-line: #e4e8ef;
+    position: fixed !important; inset: 0 !important;
+    display: none; align-items: center !important; justify-content: center !important;
+    background: #f0f2f5 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    z-index: 99999 !important; padding: 1rem !important; overflow: hidden;
+}
+#page-loader.show { display: flex !important; align-items: safe center !important; }
+#page-loader > :not(.sk-auth) { display: none !important; }   /* hide old spinner + text */
+#page-loader > .sk-auth { width: 100%; }

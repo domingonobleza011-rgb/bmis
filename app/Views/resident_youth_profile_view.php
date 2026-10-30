@@ -1,3 +1,27 @@
+<?php
+// Turn http(s):// and www. links in a post into tappable links (safe: text is escaped first)
+if (!function_exists('sk_linkify')) {
+    function sk_linkify($text) {
+        $safe = htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
+        $safe = preg_replace_callback(
+            '~(?<![\w@/])((?:https?://|www\.)[^\s<]+)~iu',
+            function ($m) {
+                $url = $m[1]; $trail = '';
+                // keep trailing punctuation outside the link
+                while ($url !== '' && preg_match('~[.,;:!?)\]\'"]$|&quot;$|&#0?39;$~', $url)) {
+                    if (preg_match('~(&quot;|&#0?39;)$~', $url, $q)) { $trail = $q[1] . $trail; $url = substr($url, 0, -strlen($q[1])); }
+                    else { $trail = substr($url, -1) . $trail; $url = substr($url, 0, -1); }
+                }
+                if ($url === '') return $m[0];
+                $href = preg_match('~^https?://~i', $url) ? $url : 'https://' . $url;
+                return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer" class="post-link">' . $url . '</a>' . $trail;
+            },
+            $safe
+        );
+        return nl2br($safe);
+    }
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -183,6 +207,8 @@
         .t-general       { background: #f0f4f8; color: #555; }
         .b-title { font-size: 1.05rem; font-weight: 800; color: #1b74e4; margin-bottom: 0.5rem; line-height: 1.4; }
         .b-content { font-size: 0.9rem; color: #444; line-height: 1.7; margin-bottom: 0.75rem; }
+.b-content a.post-link { color:#1967d2;text-decoration:underline;word-break:break-all;cursor:pointer; }
+.b-content { overflow-wrap:anywhere; }
         .b-meta { font-size: 0.75rem; color: #65676b; display: flex; flex-wrap: wrap; gap: 12px; }
         .b-meta span { display: flex; align-items: center; gap: 4px; }
         .prog-card {
@@ -300,8 +326,89 @@
             border: none;
             padding: 1.25rem 1.5rem;
         }
-        .modal-header-blue .btn-close { filter: invert(1); }
+        /* Modal header + close (X) button follow the resident theme:
+           - Default (no theme chosen): original blue header, white X
+           - Light mode: light header, dark title, BLACK X
+           - Dark mode:  dark header, light title, WHITE X
+           (resident_theme.css already sets the themed header background; the X/title rules below
+           use higher specificity + !important so the theme's filter can't hide them.) */
+        .modal-header-blue .btn-close { filter: invert(1); opacity: .9; }
+        html[data-theme] body .modal-header.modal-header-blue { background: var(--tm-thead) !important; color: var(--tm-head) !important; }
+        html[data-theme] body .modal-header-blue .modal-title,
+        html[data-theme] body .modal-header-blue .modal-title i { color: var(--tm-head) !important; }
+        /* resident_theme.css has a base reset (background: transparent !important) that wipes the
+           close icon's background-image in light/dark mode, so the X is drawn explicitly here. */
+        html[data-theme] body .modal-header-blue .btn-close {
+            width: 1em; height: 1em; padding: .5em; box-sizing: content-box;
+            filter: none !important; opacity: 1 !important;
+            background-repeat: no-repeat !important; background-position: center !important; background-size: 1em auto !important;
+        }
+        html[data-theme="light"] body .modal-header-blue .btn-close { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important; }
+        html[data-theme="dark"]  body .modal-header-blue .btn-close { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23fff'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important; }
+        /* Youth profile registration — compact multi-column layout on phones */
+        @media (max-width: 576px) {
+            #youthProfilingModal .modal-body { padding: .85rem !important; }
+            #youthProfilingModal .form-label { font-size: .72rem; margin-bottom: 2px; line-height: 1.15; }
+            #youthProfilingModal .form-control-sm,
+            #youthProfilingModal .form-select-sm { font-size: .8rem; padding-left: .45rem; }
+            #youthProfilingModal .form-select-sm { padding-right: 1.4rem; background-position: right .4rem center; }
+            #youthProfilingModal #youthPhotoPreview { width: 88px !important; height: 88px !important; margin-bottom: 0 !important; }
+            #youthProfilingModal small.text-muted { font-size: .68rem; }
+            #youthProfilingModal textarea { min-height: 0; }
+            /* Keep Save Profile always visible: body scrolls, footer stays pinned (dvh = real visible height on phones) */
+            #youthProfilingModal .modal-footer { flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,.08); }
+        }
+
+        /* ---- Youth profile modal: tidy mobile layout ---- */
+        @media (max-width: 767.98px) {
+            #youthProfilingModal .modal-body { background: #f0f2f5; padding: .75rem !important; }
+            #youthProfilingModal .modal-body > h6 {
+                background: #fff; margin: .75rem 0 0 !important; padding: .6rem .85rem;
+                font-size: .82rem; border-radius: 12px 12px 0 0; border-bottom: 1px solid #eef1f5;
+            }
+            #youthProfilingModal .modal-body > h6:first-child { margin-top: 0 !important; }
+            #youthProfilingModal .modal-body > hr { display: none; }
+            #youthProfilingModal .modal-body > .row {
+                background: #fff; margin: 0 !important; padding: .75rem .5rem .85rem; border-radius: 0 0 12px 12px;
+                --bs-gutter-x: .75rem; --bs-gutter-y: .65rem;
+            }
+            #youthProfilingModal .form-label { font-size: .7rem; margin-bottom: 3px; color: #65676b; }
+            #youthProfilingModal .form-control-sm,
+            #youthProfilingModal .form-select-sm { font-size: .9rem; padding: .5rem .65rem; min-height: 40px; }
+            #youthProfilingModal .form-select-sm { padding-right: 1.8rem; }
+            #youthProfilingModal textarea.form-control-sm { min-height: 40px; height: 40px; resize: none; overflow-y: hidden; line-height: 1.35; }
+            #youthProfilingModal .yp-photo { display: flex; justify-content: center; }
+            #youthProfilingModal #youthPhotoPreview { width: 96px !important; height: 96px !important; margin: 0 !important; }
+            #youthProfilingModal small.text-muted { display: block; font-size: .7rem; margin-top: 4px; line-height: 1.3; }
+            #youthProfilingModal .yp-view .yp-val { font-size: .85rem; padding: 6px 9px; }
+            #youthProfilingModal .modal-footer { padding: .65rem .75rem !important; }
+        }
+        /* Keep the resident bottom navbar visible (and tappable) while the youth modal is open on mobile.
+           The dialog is pinned to the screen edges (top:0 -> just above the nav) instead of using
+           100vh/100dvh math, which breaks on phones when the browser toolbar shows/hides and pushed the
+           Save button underneath the nav. Body scrolls; header + footer (Save) stay fixed in view. */
+        @media (max-width: 767.98px) {
+            :root { --rnav-h: 68px; }
+            body.modal-open .mobile-bottom-nav { z-index: 2100; }
+            #youthProfilingModal .modal-dialog {
+                position: fixed;
+                top: 0; left: 0; right: 0;
+                bottom: var(--rnav-h);            /* nav height already includes its safe-area padding */
+                width: auto; max-width: none;
+                height: auto; min-height: 0; max-height: none;
+                margin: 0;
+            }
+            #youthProfilingModal .modal-content { height: 100%; max-height: 100%; border-radius: 0; display: flex; flex-direction: column; }
+            #youthProfilingModal .modal-content > .modal-header,
+            #youthProfilingModal .modal-content > .alert { flex: 0 0 auto; }
+            #youthProfilingModal .modal-content > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+            #youthProfilingModal .modal-content > form > .modal-body { flex: 1 1 auto; min-height: 0; max-height: none !important; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+            #youthProfilingModal .modal-content > form > .modal-footer { flex: 0 0 auto; }
+        }
+        @media (max-width: 576px) { :root { --rnav-h: 62px; } }
         .modal-body { background: #f8f9fa; }
+        .yp-view .yp-lbl { display:block; font-size:.68rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#65676b; }
+        .yp-view .yp-val { display:block; font-size:.9rem; color:#1c1e21; background:#fff; border:1px solid #e8ecf0; border-radius:8px; padding:7px 10px; margin-top:2px; word-break:break-word; }
         .modal-footer { background: #fff; border-top: 1px solid #dce0e4; }
         .form-control-sm, .form-select-sm {
             border-radius: 8px;
@@ -318,6 +425,9 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
+        /* Youth profile form: labels (LAST NAME, FIRST NAME, EMAIL, etc.) in bold; entered values stay normal */
+        #youthProfilingModal .form-label,
+        #youthProfilingModal .yp-view .yp-lbl { font-weight: 800; color: #1c1e21; }
         .top-link {
             position: fixed;
             bottom: 2rem;
@@ -382,6 +492,10 @@
 
 <?php include ROOT_PATH . '/resident_navbar.php'; ?>
 
+<?php if (($_GET['profile'] ?? '') === 'updated'): ?>
+<div class="toast-alert toast-success" id="toastAlert"><i class="fas fa-check-circle me-2"></i>Youth profile updated.</div>
+<script>setTimeout(()=>{const t=document.getElementById('toastAlert');if(t){t.style.opacity='0';t.style.transition='opacity .5s';setTimeout(()=>t.remove(),500);}},3500);</script>
+<?php endif; ?>
 <?php if (isset($_GET['enroll'])):
     $tc = 'toast-success'; $ti = 'check-circle'; $tm = '';
     if ($_GET['enroll']==='success')   { $tm = 'Successfully enrolled in the program!'; }
@@ -466,7 +580,7 @@
             <div class="pin-ribbon"><i class="bi bi-pin-fill me-1"></i>Pinned</div>
             <span class="b-type-badge <?= $tc ?>"><?= htmlspecialchars($b['post_type']) ?></span>
             <div class="b-title"><?= htmlspecialchars($b['post_title']) ?></div>
-            <div class="b-content"><?= nl2br(htmlspecialchars($b['post_content'])) ?></div>
+            <div class="b-content"><?= sk_linkify($b['post_content']) ?></div>
             <div class="b-meta">
                 <span><i class="fas fa-user"></i><?= htmlspecialchars($b['posted_by']) ?></span>
                 <span><i class="fas fa-calendar"></i><?= date('M d, Y', strtotime($b['date_posted'])) ?></span>
@@ -490,7 +604,7 @@
         <div class="bulletin-card">
             <span class="b-type-badge <?= $tc ?>"><?= htmlspecialchars($b['post_type']) ?></span>
             <div class="b-title"><?= htmlspecialchars($b['post_title']) ?></div>
-            <div class="b-content"><?= nl2br(htmlspecialchars($b['post_content'])) ?></div>
+            <div class="b-content"><?= sk_linkify($b['post_content']) ?></div>
             <div class="b-meta">
                 <span><i class="fas fa-user"></i><?= htmlspecialchars($b['posted_by']) ?></span>
                 <span><i class="fas fa-calendar"></i><?= date('M d, Y', strtotime($b['date_posted'])) ?></span>
@@ -670,6 +784,10 @@
 
 </div>
 
+<?php
+// Inline SVG placeholder (external placeholder images are blocked by the CSP)
+$yp_placeholder = 'data:image/svg+xml;utf8,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e9eef7"/><circle cx="50" cy="38" r="17" fill="#9db2d3"/><path d="M16 92c2-22 18-32 34-32s32 10 34 32z" fill="#9db2d3"/></svg>');
+?>
 <!-- YOUTH PROFILING MODAL -->
 <div class="modal fade" id="youthProfilingModal" tabindex="-1" aria-labelledby="youthProfilingTitle" aria-hidden="true"
     <?php if ($youth_profile_incomplete): ?>data-bs-backdrop="static" data-bs-keyboard="false"<?php endif; ?>>
@@ -677,7 +795,7 @@
         <div class="modal-content">
             <div class="modal-header modal-header-blue">
                 <h5 class="modal-title fw-bold" id="youthProfilingTitle">
-                    <i class="fas fa-id-card me-2"></i> Youth Profile Registration
+                    <i class="fas fa-id-card me-2"></i> <?= $youth_profile_incomplete ? 'Youth Profile Registration' : 'My Youth Profile' ?>
                 </h5>
                 <?php if (!$youth_profile_incomplete): ?>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -689,6 +807,7 @@
                 Welcome! Since you're registering as SK youth, please complete this profile first before you can use the rest of the resident portal.
             </div>
             <?php endif; ?>
+<?php if ($youth_profile_incomplete): ?>
             <form method="post" class="was-validated show-loader" data-loader-msg="Saving youth profile..." enctype="multipart/form-data">
                 <div class="modal-body p-3 p-md-4" style="max-height:75vh;overflow-y:auto;">
 
@@ -696,40 +815,37 @@
                     <hr class="mt-0 mb-3">
 
                     <div class="row g-2 mb-2 align-items-center">
-                        <div class="col-12 col-md-3 text-center">
+                        <div class="col-12 col-md-3 text-center yp-photo">
                             <img id="youthPhotoPreview"
-                                src="<?= $existing_youth_photo ? 'uploads/youth_photos/' . htmlspecialchars($existing_youth_photo) : 'https://via.placeholder.com/100x100.png?text=Photo' ?>"
+                                src="<?= $existing_youth_photo ? 'uploads/youth_photos/' . htmlspecialchars($existing_youth_photo) : $yp_placeholder ?>"
                                 alt="Youth photo" class="rounded-circle mb-2"
                                 style="width:100px;height:100px;object-fit:cover;border:2px solid #e8ecf0;">
                         </div>
                         <div class="col-12 col-md-9">
                             <label class="form-label">Photo</label>
                             <input name="photo" type="file" accept="image/png,image/jpeg,image/gif,image/webp"
-                                class="form-control form-control-sm"
-                                onchange="const f=this.files[0]; if(f){document.getElementById('youthPhotoPreview').src=URL.createObjectURL(f);}">
-                            <small class="text-muted">JPG, PNG, GIF, or WebP — max 5 MB. <?= $existing_youth_photo ? 'Leave blank to keep your current photo.' : 'Optional.' ?></small>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-2">
-                        <div class="col-12 col-md-4">
-                            <label class="form-label">Last Name</label>
-                            <input name="lname" type="text" class="form-control form-control-sm" placeholder="Required"
-                                value="<?= isset($userdetails['lname']) ? htmlspecialchars($userdetails['lname']) : '' ?>" required>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <label class="form-label">First Name</label>
-                            <input name="fname" type="text" class="form-control form-control-sm" placeholder="Required"
-                                value="<?= isset($userdetails['fname']) ? htmlspecialchars($userdetails['fname']) : '' ?>" required>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <label class="form-label">Middle Name</label>
-                            <input name="mi" type="text" class="form-control form-control-sm" placeholder="Required" required>
+                                class="form-control form-control-sm" <?= $existing_youth_photo ? '' : 'required' ?>>
+                            <small class="text-muted">JPG, PNG, GIF, or WebP — max 5 MB. <?= $existing_youth_photo ? 'Leave blank to keep your current photo.' : 'Required.' ?></small>
                         </div>
                     </div>
 
                     <div class="row g-2 mb-2">
                         <div class="col-6 col-md-4">
+                            <label class="form-label">Last Name</label>
+                            <input name="lname" type="text" class="form-control form-control-sm" placeholder="Required"
+                                value="<?= htmlspecialchars($youth_data['lname'] ?? $resident_row['lname'] ?? '') ?>" required>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">First Name</label>
+                            <input name="fname" type="text" class="form-control form-control-sm" placeholder="Required"
+                                value="<?= htmlspecialchars($youth_data['fname'] ?? $resident_row['fname'] ?? '') ?>" required>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Middle Name</label>
+                            <input name="mi" type="text" class="form-control form-control-sm" placeholder="Required"
+                                value="<?= htmlspecialchars($youth_data['mi'] ?? $resident_row['mi'] ?? '') ?>" required>
+                        </div>
+                                            <div class="col-6 col-md-4">
                             <label class="form-label">Age</label>
                             <?php
                                 $computed_age = '';
@@ -742,7 +858,7 @@
                             ?>
                             <input name="age" type="number" class="form-control form-control-sm"
                                 value="<?= htmlspecialchars($computed_age) ?>" readonly tabindex="-1" style="background:#f4f7fb;">
-                            <small class="text-muted">Based on your birthdate on file</small>
+                            <small class="text-muted d-none d-md-block">Based on your birthdate on file</small>
                         </div>
                         <div class="col-6 col-md-4">
                             <label class="form-label">Sex</label>
@@ -752,7 +868,7 @@
                                 <option value="Female" <?= (isset($userdetails['sex']) && $userdetails['sex']==='Female') ? 'selected':'' ?>>Female</option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-6 col-md-4">
                             <label class="form-label">Civil Status</label>
                             <select name="civil_status" class="form-select form-select-sm" required>
                                 <option value="Single">Single</option>
@@ -769,29 +885,49 @@
                         <div class="col-12 col-md-6">
                             <label class="form-label">Email Address</label>
                             <input type="email" class="form-control form-control-sm" name="email_address"
-                                placeholder="name@example.com" required inputmode="email">
+                                placeholder="name@example.com" required inputmode="email"
+                                value="<?= htmlspecialchars($resident_row['email'] ?? '') ?>">
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Educational Attainment</label>
-                            <input type="text" class="form-control form-control-sm" name="educ_attain"
-                                placeholder="e.g. College Undergraduate" required>
+                            <select name="educ_attain" id="educSelect" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Select</option>
+                                <option value="Elementary Level">Elementary Level</option>
+                                <option value="Elementary Graduate">Elementary Graduate</option>
+                                <option value="High School Level">High School Level</option>
+                                <option value="High School Graduate">High School Graduate</option>
+                                <option value="Senior High School Level">Senior High School Level</option>
+                                <option value="Senior High School Graduate">Senior High School Graduate</option>
+                                <option value="Vocational / Technical">Vocational / Technical</option>
+                                <option value="College Level">College Level</option>
+                                <option value="College Graduate">College Graduate</option>
+                                <option value="Post Graduate">Post Graduate</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <input type="text" name="educ_attain_other" id="educOther" class="form-control form-control-sm mt-1 d-none"
+                                placeholder="Please specify" maxlength="100">
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Employment Status</label>
-                            <select name="emp_status" class="form-select form-select-sm" required>
+                            <select name="emp_status" id="empSelect" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Select</option>
                                 <option value="Employed">Employed</option>
                                 <option value="Unemployed">Unemployed</option>
                                 <option value="Self-Employed">Self-Employed</option>
                                 <option value="Student">Student</option>
+                                <option value="Other">Other</option>
                             </select>
+                            <input type="text" name="emp_status_other" id="empOther" class="form-control form-control-sm mt-1 d-none"
+                                placeholder="Please specify" maxlength="100">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Special Skills / Interests</label>
-                            <textarea class="form-control form-control-sm" name="skill_name" rows="2"
+                            <textarea class="form-control form-control-sm" name="skill_name" rows="1"
                                 placeholder="e.g. Graphic Design, Public Speaking, Sports" required></textarea>
                         </div>
                     </div>
-                </div>
+                <?php $bmis_consent_id = 'consent_youth'; $bmis_consent_purpose = 'create and manage my youth profile'; $bmis_consent_third = false; include __DIR__ . '/partials/consent_checkbox.php'; ?>
+</div>
                 <div class="modal-footer bg-light p-3 gap-2 flex-nowrap">
                     <input name="id_youth" type="hidden" value="<?= $userdetails['id_resident'] ?? '' ?>">
                     <input type="hidden" name="create_youth" value="1">
@@ -803,6 +939,133 @@
                     </button>
                 </div>
             </form>
+            <?php else: ?>
+            <?php
+                $yd = $youth_data; $rd = $resident_row;
+                $bd_fmt = !empty($rd['bdate']) ? date('F j, Y', strtotime($rd['bdate'])) : '—';
+                $ro_age = !empty($rd['bdate']) ? (new DateTime())->diff(new DateTime($rd['bdate']))->y : ($yd['age'] ?? '');
+                $addr_parts = array_filter([trim(($rd['houseno'] ?? '') . ' ' . ($rd['street'] ?? '')), $rd['brgy'] ?? '', $rd['municipal'] ?? '', $rd['province'] ?? ''], function($v){ return trim((string)$v) !== ''; });
+                $h = function($v) { return htmlspecialchars((string)$v); };
+                $educ_opts = ['Elementary Level','Elementary Graduate','High School Level','High School Graduate','Senior High School Level','Senior High School Graduate','Vocational / Technical','College Level','College Graduate','Post Graduate'];
+                $emp_opts  = ['Employed','Unemployed','Self-Employed','Student'];
+                $civil_opts = ['Single','Married','Solo Parent','Widowed'];
+                $educ_cur = trim((string)($yd['educ_attain'] ?? '')); $emp_cur = trim((string)($yd['emp_status'] ?? ''));
+                $educ_is_other = $educ_cur !== '' && !in_array($educ_cur, $educ_opts, true);
+                $emp_is_other  = $emp_cur  !== '' && !in_array($emp_cur,  $emp_opts,  true);
+            ?>
+            <form method="post" class="show-loader" data-loader-msg="Saving changes..." enctype="multipart/form-data" novalidate>
+                <div class="modal-body p-3 p-md-4" style="max-height:75vh;overflow-y:auto;">
+
+                    <h6 class="text-primary fw-bold mb-2"><i class="fas fa-user me-1"></i> Personal Information</h6>
+                    <hr class="mt-0 mb-3">
+
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-12 col-md-3 text-center yp-photo">
+                            <img id="youthPhotoPreview"
+                                src="<?= !empty($yd['photo']) ? 'uploads/youth_photos/' . $h($yd['photo']) : $yp_placeholder ?>"
+                                alt="Youth photo" class="rounded-circle mb-2"
+                                style="width:100px;height:100px;object-fit:cover;border:2px solid #e8ecf0;">
+                        </div>
+                        <div class="col-12 col-md-9">
+                            <label class="form-label">Photo</label>
+                            <input name="photo" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="form-control form-control-sm">
+                            <small class="text-muted">Optional. JPG, PNG, GIF, or WebP — max 5 MB. Leave blank to keep your current photo.</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Last Name</label>
+                            <input name="lname" type="text" class="form-control form-control-sm" value="<?= $h($yd['lname'] ?? '') ?>">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">First Name</label>
+                            <input name="fname" type="text" class="form-control form-control-sm" value="<?= $h($yd['fname'] ?? '') ?>">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Middle Name</label>
+                            <input name="mi" type="text" class="form-control form-control-sm" value="<?= $h($yd['mi'] ?? '') ?>">
+                        </div>
+                                            <div class="col-6 col-md-4">
+                            <label class="form-label">Age</label>
+                            <input type="number" class="form-control form-control-sm" value="<?= $h($ro_age) ?>" readonly tabindex="-1" style="background:#f4f7fb;">
+                            <small class="text-muted d-none d-md-block">Based on your birthdate on file</small>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Sex</label>
+                            <select name="sex" class="form-select form-select-sm">
+                                <option value="" disabled <?= empty($yd['sex']) ? 'selected' : '' ?>>Select</option>
+                                <?php foreach (['Male','Female'] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($yd['sex'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Civil Status</label>
+                            <select name="civil_status" class="form-select form-select-sm">
+                                <?php foreach ($civil_opts as $o): ?>
+                                <option value="<?= $o ?>" <?= ($yd['civil_status'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary fw-bold mt-3 mb-2"><i class="fas fa-at me-1"></i> Contact &amp; Education</h6>
+                    <hr class="mt-0 mb-3">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control form-control-sm" name="email_address" placeholder="name@example.com"
+                                inputmode="email" value="<?= $h($yd['email_address'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Educational Attainment</label>
+                            <select name="educ_attain" id="educSelect" class="form-select form-select-sm">
+                                <option value="" <?= $educ_cur === '' ? 'selected' : '' ?>>Select</option>
+                                <?php foreach ($educ_opts as $o): ?>
+                                <option value="<?= $h($o) ?>" <?= $educ_cur === $o ? 'selected' : '' ?>><?= $h($o) ?></option>
+                                <?php endforeach; ?>
+                                <option value="Other" <?= $educ_is_other ? 'selected' : '' ?>>Other</option>
+                            </select>
+                            <input type="text" name="educ_attain_other" id="educOther" class="form-control form-control-sm mt-1 <?= $educ_is_other ? '' : 'd-none' ?>"
+                                placeholder="Please specify" maxlength="100" value="<?= $educ_is_other ? $h($educ_cur) : '' ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Employment Status</label>
+                            <select name="emp_status" id="empSelect" class="form-select form-select-sm">
+                                <option value="" <?= $emp_cur === '' ? 'selected' : '' ?>>Select</option>
+                                <?php foreach ($emp_opts as $o): ?>
+                                <option value="<?= $h($o) ?>" <?= $emp_cur === $o ? 'selected' : '' ?>><?= $h($o) ?></option>
+                                <?php endforeach; ?>
+                                <option value="Other" <?= $emp_is_other ? 'selected' : '' ?>>Other</option>
+                            </select>
+                            <input type="text" name="emp_status_other" id="empOther" class="form-control form-control-sm mt-1 <?= $emp_is_other ? '' : 'd-none' ?>"
+                                placeholder="Please specify" maxlength="100" value="<?= $emp_is_other ? $h($emp_cur) : '' ?>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Special Skills / Interests</label>
+                            <textarea class="form-control form-control-sm" name="skill_name" rows="1"
+                                placeholder="e.g. Graphic Design, Public Speaking, Sports"><?= $h($yd['skill_name'] ?? '') ?></textarea>
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary fw-bold mt-3 mb-2"><i class="fas fa-address-card me-1"></i> On File <small class="text-muted fw-normal">(from your resident record)</small></h6>
+                    <hr class="mt-0 mb-2">
+                    <div class="row g-2 yp-view">
+                        <div class="col-6"><span class="yp-lbl">Birthdate</span><span class="yp-val"><?= $h($bd_fmt) ?></span></div>
+                        <div class="col-6"><span class="yp-lbl">Contact Number</span><span class="yp-val"><?= $h(($rd['contact'] ?? '') !== '' ? $rd['contact'] : '—') ?></span></div>
+                        <div class="col-12"><span class="yp-lbl">Address</span><span class="yp-val"><?= $h($addr_parts ? implode(', ', $addr_parts) : '—') ?></span></div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3 gap-2 flex-nowrap">
+                    <input type="hidden" name="update_youth_profile" value="1">
+                    <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold rounded-pill flex-grow-1 flex-md-grow-0">
+                        <i class="fas fa-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -910,6 +1173,13 @@ document.querySelectorAll('.portal-tab, .chip-filter, .btn-hero-outline, .btn-pr
     });
 });
 
+<?php if (!$youth_profile_incomplete && !empty($photo_msg)): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    const m = document.getElementById('youthProfilingModal');
+    if (m) { new bootstrap.Modal(m).show(); }
+});
+<?php endif; ?>
+
 <?php if ($youth_profile_incomplete): ?>
 document.addEventListener('DOMContentLoaded', function() {
     const youthModalEl = document.getElementById('youthProfilingModal');
@@ -928,5 +1198,61 @@ document.getElementById('enrollModal').addEventListener('show.bs.modal', functio
     document.getElementById('modal_prog_venue').textContent = b.dataset.venue;
 });
 </script>
+<script>
+// "Other" → show a required "Please specify" box (educational attainment / employment status)
+(function () {
+    function wire(selId, otherId) {
+        var sel = document.getElementById(selId), other = document.getElementById(otherId);
+        if (!sel || !other) return;
+        function sync() {
+            var on = sel.value === 'Other';
+            other.classList.toggle('d-none', !on);
+            other.required = on;
+            if (!on) other.value = '';
+            else other.focus();
+        }
+        sel.addEventListener('change', sync);
+    }
+    wire('educSelect', 'educOther');
+    wire('empSelect', 'empOther');
+})();
+</script>
+<script>
+// Live photo preview (FileReader → data: URL, works under the site CSP and on phones)
+(function () {
+    function wire(input, img) {
+        if (!input || !img) return;
+        input.addEventListener('change', function () {
+            var f = input.files && input.files[0];
+            if (!f) return;
+            if (f.size > 5 * 1024 * 1024) { alert('Photo is too large (max 5 MB).'); input.value = ''; return; }
+            var r = new FileReader();
+            r.onload = function (e) {
+                img.onerror = function () {
+                    alert('That photo format can\'t be used. Please choose a JPG, PNG, GIF or WebP image.');
+                    input.value = '';
+                };
+                img.src = e.target.result;
+            };
+            r.readAsDataURL(f);
+        });
+    }
+    wire(document.querySelector('#youthProfilingModal input[name="photo"]'), document.getElementById('youthPhotoPreview'));
+    var upd = document.querySelector('input[name="update_youth_photo"]');
+    if (upd && upd.form) wire(upd.form.querySelector('input[name="photo"]'), document.getElementById('youthPhotoCurrent'));
+})();
+</script>
+<script>
+// Special Skills box: compact by default, grows with the text
+(function () {
+    var ta = document.querySelector('#youthProfilingModal textarea[name="skill_name"]');
+    if (!ta) return;
+    function fit() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 160) + 'px'; }
+    ta.addEventListener('input', fit);
+    var m = document.getElementById('youthProfilingModal');
+    if (m) m.addEventListener('shown.bs.modal', fit);
+})();
+</script>
+<?php include __DIR__ . '/partials/legal_widgets.php'; ?>
 </body>
 </html>

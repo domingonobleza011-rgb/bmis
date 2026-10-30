@@ -12,11 +12,11 @@
     <tbody>
         <?php foreach ($members as $fm): ?>
         <tr>
-            <td><?= htmlspecialchars(trim($fm['lname'] . ', ' . $fm['fname'] . ' ' . $fm['mi'])) ?></td>
-            <td><?= htmlspecialchars($fm['relationship']) ?></td>
-            <td><?= htmlspecialchars($fm['age'] !== null ? $fm['age'] : '—') ?></td>
-            <td><?= htmlspecialchars($fm['sex'] ?: '—') ?></td>
-            <td><?= htmlspecialchars($fm['occupation'] ?: '—') ?></td>
+            <td><?= htmlspecialchars(trim(($fm['lname'] ?? '') . ', ' . ($fm['fname'] ?? '') . ' ' . ($fm['mi'] ?? ''))) ?></td>
+            <td><?= htmlspecialchars($fm['relationship'] ?? '—') ?></td>
+            <td><?= htmlspecialchars(isset($fm['age']) && $fm['age'] !== null ? $fm['age'] : '—') ?></td>
+            <td><?= htmlspecialchars(($fm['sex'] ?? '') ?: '—') ?></td>
+            <td><?= htmlspecialchars(($fm['occupation'] ?? '') ?: '—') ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>

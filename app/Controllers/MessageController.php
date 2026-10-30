@@ -15,7 +15,7 @@ error_reporting(E_ALL ^ E_WARNING);
     
 $systemObject = new BMISClass();
 $userdetails = $systemObject->get_userdata();
-$admin_name = isset($userdetails['fname']) ? $userdetails['fname'] . ' ' . $userdetails['lname'] : 'Admin';
+$admin_name = !empty($userdetails['firstname']) ? trim($userdetails['firstname'] . ' ' . ($userdetails['surname'] ?? '')) : 'Admin';
 
 // ---- Handle: Verify (approve) resident ----
 if (isset($_POST['approve_resident'])) {
@@ -114,7 +114,7 @@ header('Content-Type: application/json');
 
 $systemObject = new BMISClass();
 $userdetails  = $systemObject->get_userdata();
-$admin_name   = isset($userdetails['fname']) ? $userdetails['fname'] . ' ' . $userdetails['lname'] : 'Admin';
+$admin_name   = !empty($userdetails['firstname']) ? trim($userdetails['firstname'] . ' ' . ($userdetails['surname'] ?? '')) : 'Admin';
 
 $conversations = $systemObject->getConversations();
 $id_uploads    = $systemObject->getPendingIDUploads();
